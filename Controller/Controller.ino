@@ -89,6 +89,9 @@ EEPROM-Mapping
 **************************************************************************************/
 
 #include "Controller.h"
+#include "graphics.h"
+
+uint8_t level[16];
 
 void TimerSecondsFcn() {
   // toggle LED to show, that we are alive
@@ -126,6 +129,17 @@ void setup() {
     #endif
   #endif
 
+  //initialise display
+  TftInit();
+  backcolour=0;
+  colour=0xFFFFFF;
+  align=ALIGN_CENTRE;
+  opclrscr(); 
+  setfont(12,0);
+  setxy(160,5);
+  putstr_align("Ultranet Monitor Unit");
+  ShowChanBoxes();
+
   // Start timers
   TimerSeconds.start();
 
@@ -135,6 +149,8 @@ void setup() {
 
 // ******************** MAIN FUNCTION ********************
 void loop() {
+  uint32_t audioupdatetime=0;
+  uint8_t x,v;
   #if UseEthernet == 1
     // handle ethernet clients
     HandleHTTPClients();
@@ -151,4 +167,16 @@ void loop() {
 
   // update timer
   TimerSeconds.update();
+
+  //update audio meters
+  if ((millis()-audioupdatetime)>100)
+  {
+     for (x=0; x<16; x++)
+     {
+        ShowAudioLevel(x,level[x]);
+        v=random(255); if (v>level[x]) level[x]=v;
+        if (level[x]>8) level[x]-=8; else level[x]=0;
+     }
+  }
+
 }

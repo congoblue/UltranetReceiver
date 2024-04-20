@@ -61,3 +61,5 @@ typedef union
     int16_t s16;
     uint8_t u8[2];
 }data_16b;
+
+extern uint8_t level[16];
