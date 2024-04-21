@@ -41,6 +41,26 @@
 #include "bitmaps/bitmap_select_unselect.h"
 #include "bitmaps/bitmap_dot_select_flash.h"*/
 
+char chname[16][16]=
+{
+  "DrumsL",
+  "DrumsR",
+  "PianoL",
+  "PianoR",
+  "Acoustic",
+  "Electric",
+  "Inst1",
+  "Inst2",
+  "Vox1",
+  "Vox2",
+  "Vox3",
+  "Vox4",
+  "Extra",
+  "Lead",
+  "AmbL",
+  "AmbR"
+};
+
 
 int xp=0;
 int yp=0;
@@ -130,6 +150,7 @@ int cfont=0;
 unsigned int colour=0xFFFFFF;
 unsigned int backcolour=0;
 unsigned char backmode=0;
+unsigned char textrotate=0;
 
 unsigned char Trigger=0;
 unsigned char IsClr=0;
@@ -587,14 +608,40 @@ void opputc(char c)
            if (backmode==0)
            {
             cc=color565(((pv*cr)>>8)+(((255-pv)*br)>>8),((pv*cg)>>8)+(((255-pv)*bg)>>8),((pv*cb)>>8)+(((255-pv)*bb)>>8));
-            drawPixel(xp+i,yp+j,cc);
+            if (textrotate==0)
+              drawPixel(xp+i,yp+j,cc);
+            else
+              drawPixel(xp+j,yp-i,cc);
            }
-           else {if (pv>128) drawPixel(xp+i,yp+j,colour);}
+           else 
+           {
+              if (pv>128) 
+              {
+                if (textrotate==0)
+                  drawPixel(xp+i,yp+j,colour);
+                else
+                  drawPixel(xp+j,yp-i,colour);
+              }              
+           }
         }
-        if (backmode==0) drawPixel(xp+i,yp+j,color565(br,bg,bb)); //1pix gap to right of char
+        if (backmode==0) 
+        {      
+          if (textrotate==0)
+            drawPixel(xp+i,yp+j,color565(br,bg,bb)); //1pix gap to right of char
+          else
+            drawPixel(xp+j,yp-i,color565(br,bg,bb)); //1pix gap to right of char
+        }
      }
-     xp+=pcurrentfont->w[c-32]+1;
-     if (xp>=_width) {xp=0; yp+=pcurrentfont->ht+linespacing;}
+     if (textrotate==0)
+     {
+      xp+=pcurrentfont->w[c-32]+1;
+      if (xp>=_width) {xp=0; yp+=pcurrentfont->ht+linespacing;}
+     }
+     else
+     {
+      yp-=pcurrentfont->w[c-32]+1;
+      if (yp<0) {yp=_height-1; xp+=pcurrentfont->ht+linespacing;}
+     }
    }
    IsClr=0; //flag screen not clr
 }
@@ -892,158 +939,6 @@ void BitmapDisplay(uint8_t n, uint32_t txp, uint32_t typ, uint8_t overlay)
 
 }
 
-//---------------------------------------------------------
-//! display faded block
-//---------------------------------------------------------
-void FadeDisplay(uint32_t st, uint32_t end)
-{
-  int i;
-  uint16_t col;
-  int16_t sr,sg,sb,dr,dg,db;
-
-  sr=(st&0xFF0000)>>16; //starting colour (bottom)
-  sg=(st&0x00FF00)>>8;
-  sb=(st&0x0000FF);
-
-  dr=((end&0xFF0000)>>16)-sr; //difference to ending colour (top)
-  dg=((end&0x00FF00)>>8)-sg;
-  db=(end&0x0000FF)-sb;
-
-  /*col=color565(0x40,0x40,0x40);
-
-  drawFastHLine(13,98,101,col);
-  drawFastHLine(13,127,101,col);
-  drawFastVLine(13,98,30,col);
-  drawFastVLine(114,98,30,col);
-  ErasePointer();*/
-
-  for (i=0; i<100; i++)
-  {
-    col=color565(sr+(dr*i/100),sg+(dg*i/100),sb+(db*i/100));
-    if ((i==0)||(i==99)) drawFastVLine(14+i,100,17,col);
-    else drawFastVLine(14+i,99,19,col);
-  }
-  col=color565(sr,sg,sb);
-  drawFastVLine(13,101,15,col);
-  col=color565(dr,dg,db);
-  drawFastVLine(114+i,101,15,col);
-  setWindow(0, 0, _width, _height);
-}
-
-//---------------------------------------------------------
-//! display colour block
-//---------------------------------------------------------
-void ColourDisplay(void)
-{
-  int i;
-  uint16_t col;
-  uint8_t sr,sg,sb;
-
-  /*col=color565(0x40,0x40,0x40);
-
-  drawFastHLine(13,98,101,col);
-  drawFastHLine(13,127,101,col);
-  drawFastVLine(13,98,30,col);
-  drawFastVLine(114,98,30,col);
-  ErasePointer();*/
-
-  for (i=0; i<100; i++)
-  {
-    HslToRgbw(&sr,&sg,&sb,255*i/100,0,0,255);
-    col=color565(sr,sg,sb);
-    if ((i==0)||(i==99)) drawFastVLine(14+i,100,17,col);
-    else drawFastVLine(14+i,99,19,col);
-  }
-  col=color565(255,0,0);
-  drawFastVLine(13,101,15,col);
-  drawFastVLine(114+i,101,15,col);
-  setWindow(0, 0, _width, _height);
-}
-
-//---------------------------------------------------------
-//! display scroll display
-//---------------------------------------------------------
-void ScrollDisplay(void)
-{
-  int i;
-  unsigned int col;
-  
-  ColourDisplay();
-
-  backmode=1; //overlay
-  col=colour;
-  colour=0;
-  for (i=0; i<10; i++)
-  {
-      setxy(14+(i*(14-i+6)),106);
-      opputc('>');      
-  }
-  /*setxy(16,106); opputc('>');      
-
-  setxy(58,106); opputc('>');      
-  setxy(64,106); opputc('>');      
-
-  setxy(94,106); opputc('>');      
-  setxy(100,106); opputc('>');      
-  setxy(106,106); opputc('>');      */
-
-  colour=col;
-  backmode=0;
-}
-
-
-const signed char sint[64] = {
- 1, 12, 25, 37, 49, 61, 72, 82, 91, 100, 107, 114, 119, 123, 126, 127,
- 127, 126, 124, 121, 116, 110, 103, 95, 86, 76, 65, 54, 42, 30, 18, 5,
--8,-21,-33,-45,-57,-68,-79,-89,-97,-105,-112,-118,-122,-126,-127,-127,
--127,-126,-123,-119,-114,-107,-99,-91,-81,-71,-60,-48,-36,-24,-11 };
-
-//---------------------------------------------------------
-//! display wave display
-//---------------------------------------------------------
-void WaveDisplay(void)
-{
-  int i;
-  unsigned int col;
-  
-  col=color565(0x40,0x40,0x40);
-
-  fillRect(14,99,100,28,0);
-  drawFastHLine(13,98,101,col);
-  drawFastHLine(13,127,101,col);
-  drawFastVLine(13,98,30,col);
-  drawFastVLine(114,98,30,col);
-  ErasePointer();
-
-  col=color565(0xC0,0xC0,0xC0);
-  for (i=0; i<100; i++)
-  {
-    drawPixel(14+i, 114+(sint[14+((i*4)%64)]/16), col);
-  }
-}
-
-//---------------------------------------------------------
-//! display pointer
-//---------------------------------------------------------
-void ShowPointer(uint8_t val)
-{
-  int32_t x;
-
-  x=13-7+val*100/255; //7 is half width of the arrow icon
-  
-  BitmapDisplay(16,x,120,0);
-}
-
-//---------------------------------------------------------
-//! erase pointer area
-//---------------------------------------------------------
-void ErasePointer(void)
-{
-  fillRect(4,120,124,17,0); //erase the pointer arrow
-  //setWindow(0,0,127,159);
-}
-
-
   #define CBOXW 37
   #define CBOXH 80
   #define CBOXT 65
@@ -1058,8 +953,8 @@ void ShowChanVolume(uint8_t ch, uint8_t v)
   uint16_t vp=CBOXT;
   if (ch>=8) {x=8; vp+=CBOXH+4;}
   vv=v*(CBOXH-20)/256;
-  fillRect(12+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,color565(64,64,64)); //the inactive volume
-  fillRect(12+(ch-x)*(CBOXW+2),vp+17+(CBOXH-20-vv),VOLW,vv,color565(255,255,255)); //the active volume
+  fillRect(27+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,color565(64,64,64)); //the inactive volume
+  fillRect(27+(ch-x)*(CBOXW+2),vp+17+(CBOXH-20-vv),VOLW,vv,color565(255,255,255)); //the active volume
 }
 
 void ShowAudioLevel(uint8_t ch, uint8_t v)
@@ -1073,7 +968,7 @@ void ShowAudioLevel(uint8_t ch, uint8_t v)
   if (vy>64*(CBOXH-20)/256) vy=64*(CBOXH-20)/256;
   vg=vv;
   if (vg>128*(CBOXH-20)/256) vg=128*(CBOXH-20)/256;
-  fillRect(8+(CBOXW-VOLW-4)+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,0); //the inactive level meter
+  fillRect(8+(CBOXW-VOLW-4)+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,0); //blank the inactive level meter
   if (vr>0) fillRect(8+(CBOXW-VOLW-4)+(ch-x)*(CBOXW+2),vp+17+((CBOXH-20)*64/256-vr),VOLW,vr,color565(255,0,0)); //level red if above 75%
   if (vy>0) fillRect(8+(CBOXW-VOLW-4)+(ch-x)*(CBOXW+2),vp+17+((CBOXH-20)*128/256-vy),VOLW,vy,color565(255,255,0)); //level yellow if above 50%
   fillRect(8+(CBOXW-VOLW-4)+(ch-x)*(CBOXW+2),vp+17+(CBOXH-20-vg),VOLW,vg,color565(0,255,0)); //green below 50%
@@ -1086,17 +981,19 @@ void ShowChanBoxes(void)
   char buf[8];
   uint8_t i,x=0;
   uint16_t v=CBOXT;
+  textrotate=1;
   for (i=0; i<16; i++)
   {
     if (i==active) colour=0xFF0000;
     DrawRect(8+(i-x)*(CBOXW+2),v,CBOXW,CBOXH);
-    sprintf(buf,"%d",i+1);
-    setxy(8+(i-x)*(CBOXW+2)+2,v+2);
+    sprintf(buf,"%d:%s",i+1,chname[i]);
+    setxy(9+(i-x)*(CBOXW+2)+2,CBOXH+v-3);
     putstr(buf);
     if (i==7) {x=8; v+=CBOXH+4;}
     colour=tempcol;
     ShowChanVolume(i,i*16);
   }
+  textrotate=0;
 }
 
 

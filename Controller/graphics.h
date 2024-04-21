@@ -19,6 +19,7 @@ extern unsigned char wordwrap;
 extern unsigned char autofontsize;
 extern int fontsize;
 extern unsigned char Trigger;
+extern char chname[16][16];
 
 
 void TftInit(void);
