@@ -1,3 +1,5 @@
+#include <SPI.h>
+
 /*************************************************************************************
 Ultranet2SPDIF - Converter for Behringer Ultranet to SPDIF or other digital audio
 v0.4.0 built on 04.09.2023

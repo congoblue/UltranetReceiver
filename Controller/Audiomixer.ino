@@ -13,7 +13,7 @@ void InitAudiomixer() {
 
   uint8_t i;
   for (i=1; i<=16; i++) {
-    audiomixer.chVolume[i-1] = 0; // set to 0%
+    audiomixer.chVolume[i-1] = 50; // set to 0%
     audiomixer.chBalance[i-1] = 50; // bring to center
     UpdateFPGAAudioEngine(i); // send values to FPGA
   }

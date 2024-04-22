@@ -15,6 +15,13 @@
 
  ****************************************************/
 
+#if defined(ARDUINO_ARCH_SAMD)
+  #define SPI_MIN_CLOCK_DIVIDER (uint8_t)(1 + ((F_CPU - 1) / 24000000))
+  #endif
+
+//this doesn't work. You need to edit spi.h in
+//C:\Users\Tim.SABRE\AppData\Local\Arduino15\packages\arduino\hardware\samd\1.8.14\libraries\SPI
+
 #include <Arduino.h>
 #include "graphics.h"
 #include <SPI.h>
@@ -114,6 +121,7 @@ void writedata(uint8_t c)
 void tft_init(void)
 {
   char tabcolor;
+  
 
   SPI.begin(); //
 

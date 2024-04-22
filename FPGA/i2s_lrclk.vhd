@@ -16,9 +16,9 @@ architecture Behavioral of i2s_lrclk is
 begin
     process(clk)     
     begin
-        if(rising_edge(clk)) then
+        if(falling_edge(clk)) then
             count <=count+1;
-            if(count = 999) then
+            if(count = 23) then
                 b <= not b;
                 count <=0;
             end if;
