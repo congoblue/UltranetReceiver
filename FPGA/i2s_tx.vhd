@@ -16,7 +16,7 @@ use IEEE.NUMERIC_STD.ALL;
 
 use work.i2s_types_pkg.all;
 
-entity i2s_sender is
+entity i2s_tx is
     --wave_x_in are sampled at the rising edge of MCLK
     generic (
         DEBUG : boolean := false
@@ -30,11 +30,11 @@ entity i2s_sender is
         wave_left_in : in sample_t;
         wave_right_in : in sample_t
     );
-end i2s_sender;
+end i2s_tx;
 
 
 
-architecture Behavioral of i2s_sender is
+architecture Behavioral of i2s_tx is
    --Change level every _DIV ticks of MCLK
     constant LRCK_DIV : integer := (MCLK_FREQ / (LRCK_FREQ*2)) -1; -- 384/2 -1 = 161
     constant SCLK_DIV : integer := (MCLK_FREQ / (SCLK_FREQ*2)) -1; 

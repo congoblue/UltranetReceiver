@@ -14,7 +14,27 @@ entity RS232_Decoder is
 	
 		RX_DataReady	: in std_logic;
 		RX_Data			: in std_logic_vector(7 downto 0);
+		
+		ch1_peak : in signed(23 downto 0);
+		ch2_peak : in signed(23 downto 0);
+		ch3_peak : in signed(23 downto 0);
+		ch4_peak : in signed(23 downto 0);
+		ch5_peak : in signed(23 downto 0);
+		ch6_peak : in signed(23 downto 0);
+		ch7_peak : in signed(23 downto 0);
+		ch8_peak : in signed(23 downto 0);
+		ch9_peak : in signed(23 downto 0);
+		ch10_peak : in signed(23 downto 0);
+		ch11_peak : in signed(23 downto 0);
+		ch12_peak : in signed(23 downto 0);
+		ch13_peak : in signed(23 downto 0);
+		ch14_peak : in signed(23 downto 0);
+		ch15_peak : in signed(23 downto 0);
+		ch16_peak : in signed(23 downto 0);
 
+		TX_DataReady	: out std_logic;
+		TX_Data			: out std_logic_vector(7 downto 0);
+		
 		main_volume_l	: out std_logic_vector(23 downto 0);
 		main_volume_r	: out std_logic_vector(23 downto 0);
 

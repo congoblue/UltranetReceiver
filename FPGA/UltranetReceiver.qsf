@@ -154,6 +154,8 @@ set_location_assignment PIN_D3 -to bMKR_D19
 set_location_assignment PIN_F3 -to bMKR_D20
 set_location_assignment PIN_G2 -to bMKR_D21
 set_location_assignment PIN_P3 -to bMKR_D2
+set_global_assignment -name VHDL_FILE peak_detect.vhd
+set_global_assignment -name VHDL_FILE i2s_types.vhd
 set_global_assignment -name VHDL_FILE division.vhd
 set_global_assignment -name VHDL_FILE multiplication.vhd
 set_global_assignment -name VHDL_FILE uart_tx_clk.vhd
@@ -167,8 +169,7 @@ set_global_assignment -name VHDL_FILE RS232_Interface.vhd
 set_global_assignment -name VHDL_FILE RS232_Decoder.vhdl
 set_global_assignment -name BDF_FILE UltranetReceiver.bdf
 set_global_assignment -name SDC_FILE UltranetReceiver.sdc
-set_global_assignment -name VHDL_FILE i2s_bclk.vhd
-set_global_assignment -name VHDL_FILE i2s_mclk.vhd
 set_global_assignment -name VHDL_FILE ultranet_demux.vhd
 set_global_assignment -name QIP_FILE pll_2.qip
+set_global_assignment -name BSF_FILE peak_detect.bsf
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
