@@ -64,7 +64,11 @@ char chname[16][16]=
 
 int xp=0;
 int yp=0;
-
+uint8_t EncValue=0;
+uint8_t EncChange=0;
+uint8_t KeyState=0xFF;
+uint8_t KeyHit=0;
+uint8_t LastKey=0;
 
 //font structure
 typedef struct
@@ -328,6 +332,50 @@ const unsigned char HSLCurve[] = {
 	*/
 
 };
+
+//-----------------------------------------------------------------------------
+// process state change in the rotary encoder
+//-----------------------------------------------------------------------------
+void SenseEncoder(void)
+{
+   static uint8_t encstate=0xFF;
+   if (encstate==0xFF) encstate=digitalRead(A4)|(digitalRead(A5)<<1);
+
+   if ((encstate&1)&&(digitalRead(A4)==0)) //x falling edge
+   {
+      if (digitalRead(A5)==0) EncValue++; else EncValue--;
+      EncChange=1;
+   }
+
+   if ((encstate&2)&&(digitalRead(A5)==0)) //y falling edge
+   {
+      if (digitalRead(A4)==0) EncValue--; else EncValue++;
+      EncChange=1;    
+   }
+   encstate=digitalRead(A4)|(digitalRead(A5)<<1);
+
+}
+
+//-----------------------------------------------------------------------------
+// process state change in the pushbuttons + rotary encoder push
+//-----------------------------------------------------------------------------
+void SenseKeys(void)
+{
+    uint8_t v;
+    uint8_t newkeystate=digitalRead(A0)|(digitalRead(A1)<<1)|(digitalRead(A2)<<2)|(digitalRead(A3)<<3)|(digitalRead(A6)<<4);
+    v=newkeystate^KeyState;
+    if (newkeystate<KeyState) //new press if less
+    {
+        KeyHit=1;
+        if (v&1) LastKey=1;
+        if (v&2) LastKey=2;
+        if (v&4) LastKey=3;
+        if (v&8) LastKey=4;
+        if (v&0x10) LastKey=5;
+    }
+
+    KeyState=newkeystate;
+}
 
 //-----------------------------------------------------------------------------
 // convert hsl to rgb
@@ -950,10 +998,11 @@ void BitmapDisplay(uint8_t n, uint32_t txp, uint32_t typ, uint8_t overlay)
 void ShowChanVolume(uint8_t ch, uint8_t v)
 {
   uint8_t vv,x=0; 
-  uint16_t vp=CBOXT;
+  uint16_t vp=CBOXT,bgcol;
   if (ch>=8) {x=8; vp+=CBOXH+4;}
   vv=v*(CBOXH-20)/256;
-  fillRect(27+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,color565(64,64,64)); //the inactive volume
+  if (v==0) bgcol=color565(96,0,0); else bgcol=color565(96,96,96);
+  fillRect(27+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,bgcol); //the inactive volume
   fillRect(27+(ch-x)*(CBOXW+2),vp+17+(CBOXH-20-vv),VOLW,vv,color565(255,255,255)); //the active volume
 }
 

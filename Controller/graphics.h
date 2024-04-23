@@ -20,8 +20,15 @@ extern unsigned char autofontsize;
 extern int fontsize;
 extern unsigned char Trigger;
 extern char chname[16][16];
+extern uint8_t EncValue;
+extern uint8_t EncChange;
+extern uint8_t KeyState;
+extern uint8_t KeyHit;
+extern uint8_t LastKey;
 
 
+void SenseEncoder(void);
+void SenseKeys(void);
 void TftInit(void);
 void HslToRgbw(uint8_t *opr, uint8_t *og, uint8_t *ob, uint8_t h, uint8_t s, uint8_t spread, uint8_t dim);
 void ColTemp(uint8_t *opr, uint8_t *og, uint8_t *ob, uint8_t h, uint8_t dim);

@@ -107,6 +107,24 @@ void setup() {
   // general pin-defintions
   pinMode(LED_BUILTIN, OUTPUT);
 
+  //rotary encoder pins
+  pinMode(A4,INPUT_PULLUP);
+  pinMode(A5,INPUT_PULLUP);
+  pinMode(A6,INPUT_PULLUP);
+
+  //switch pins
+  pinMode(A0,INPUT_PULLUP);
+  pinMode(A1,INPUT_PULLUP);
+  pinMode(A2,INPUT_PULLUP);
+  pinMode(A3,INPUT_PULLUP);
+
+  //initialise display
+  TftInit();
+  backcolour=0;
+  colour=0xFFFFFF;
+  align=ALIGN_CENTRE;
+  opclrscr(); 
+
   // load bitstream to FPGA and bring it up
 	setup_fpga();
 
@@ -131,12 +149,7 @@ void setup() {
     #endif
   #endif
 
-  //initialise display
-  TftInit();
-  backcolour=0;
-  colour=0xFFFFFF;
-  align=ALIGN_CENTRE;
-  opclrscr(); 
+  //initial display
   setfont(12,0);
   setxy(160,5);
   putstr_align("Ultranet Monitor Unit");
@@ -153,6 +166,7 @@ void setup() {
 void loop() {
   uint32_t audioupdatetime=0;
   uint8_t x,v;
+  char buf[8];
   #if UseEthernet == 1
     // handle ethernet clients
     HandleHTTPClients();
@@ -170,15 +184,29 @@ void loop() {
   // update timer
   TimerSeconds.update();
 
+  //sense encoder and buttons
+  SenseEncoder();
+  SenseKeys();
+
   //update audio meters
   if ((millis()-audioupdatetime)>100)
   {
      for (x=0; x<16; x++)
      {
+        //v=random(255); if (v>level[x]) level[x]=v; //random values for testing
+        if (PeakLevel[x]>level[x]) level[x]=PeakLevel[x];
         ShowAudioLevel(x,level[x]);
-        v=random(255); if (v>level[x]) level[x]=v;
-        if (level[x]>8) level[x]-=8; else level[x]=0;
+        if (level[x]>8) level[x]-=8; else level[x]=0; //decay
      }
   }
+
+  setxy(0,0);
+  sprintf(buf,"%d:%d:%d",digitalRead(A4),digitalRead(A5),digitalRead(A6));
+  putstr(buf);
+
+  setxy(0,14);
+  sprintf(buf,"%d%d%d%d",digitalRead(A0),digitalRead(A1),digitalRead(A2),digitalRead(A3));
+  putstr(buf);
+
 
 }

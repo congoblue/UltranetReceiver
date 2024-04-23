@@ -36,6 +36,7 @@ const char compile_date[] = __DATE__ " " __TIME__;
 
 // defines for FPGA
 uint8_t FPGA_Version = 0; // will be read from FPGA directly
+uint8_t PeakLevel[17];
 
 // variables
 struct {
