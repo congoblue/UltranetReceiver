@@ -58,6 +58,7 @@ void ShowPointer(uint8_t val);
 void ErasePointer(void);
 void ShowChanBox(uint8_t chan, uint8_t active);
 void ShowChanVolume(uint8_t ch, uint8_t v);
+void ShowChanBalance(uint8_t ch, uint8_t v);
 void ShowAudioLevel(uint8_t ch, uint8_t v);
 
 void disp_menuclear(void);

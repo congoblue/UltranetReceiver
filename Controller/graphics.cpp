@@ -66,7 +66,7 @@ int xp=0;
 int yp=0;
 volatile uint8_t EncValue=0;
 volatile uint8_t EncChange=0;
-volatile uint8_t KeyState=0xFF;
+volatile uint8_t KeyState=0;
 volatile uint8_t KeyHit=0;
 volatile uint8_t LastKey=0;
 uint8_t level[16]; //metering
@@ -315,6 +315,25 @@ const uint16_t checkboxtick[]={
 0b1111111111110000,
 0b0000000000000000,
 0b0000000000000000,
+};
+
+const uint16_t dot[]={
+0b0000001111000000,
+0b0001111111111000,
+0b0011111111111100,
+0b0111111111111110,
+0b0111111111111110,
+0b0111111111111110,
+0b1111111111111111,
+0b1111111111111111,
+0b1111111111111111,
+0b1111111111111111,
+0b0111111111111110,
+0b0111111111111110,
+0b0111111111111110,
+0b0011111111111100,
+0b0001111111111000,
+0b0000001111000000,
 };
 
 const unsigned char HSLCurve[] = {
@@ -912,6 +931,7 @@ void SymbolDisplay(int px, int py, char v)
    if (v==5) p=downarrow;
    if (v==6) p=checkbox;
    if (v==7) p=checkboxtick;
+   if (v==8) p=dot;
 
   for (y=0; y<16; y++) //bitmap height
   {
@@ -1009,6 +1029,10 @@ void BitmapDisplay(uint8_t n, uint32_t txp, uint32_t typ, uint8_t overlay)
   #define CBOXH 80
   #define CBOXT 65
   #define VOLW 6
+  #define PANW 15
+
+
+  #define PANTHUMB 3
 
 //---------------------------------------------------------
 //! channel display routines
@@ -1022,6 +1046,16 @@ void ShowChanVolume(uint8_t ch, uint8_t v)
   if (v==0) bgcol=color565(96,0,0); else bgcol=color565(96,96,96);
   fillRect(27+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,bgcol); //the inactive volume
   fillRect(27+(ch-x)*(CBOXW+2),vp+17+(CBOXH-20-vv),VOLW,vv,color565(255,255,255)); //the active volume
+}
+
+void ShowChanBalance(uint8_t ch, uint8_t v)
+{
+  uint8_t vv,x=0; 
+  uint16_t vp=CBOXT,bgcol;
+  if (ch>=8) {x=8; vp+=CBOXH+4;}
+  vv=v*PANW/256;
+  fillRect(24+(ch-x)*(CBOXW+2),vp+5,PANW+PANTHUMB,4,color565(96,96,96)); //the full bar
+  fillRect(24+(ch-x)*(CBOXW+2)+vv,vp+5,PANTHUMB,4,color565(255,255,255)); //the active pan blob
 }
 
 void ShowAudioLevel(uint8_t ch, uint8_t v)
@@ -1048,15 +1082,38 @@ void ShowChanBox(uint8_t chan, uint8_t active)
   uint8_t i,x=0;
   uint16_t v=CBOXT;
   textrotate=1;
-  i=chan;
-  if (i==active) colour=0xFF0000;
-  if (i>7) {x=8; v+=CBOXH+4;}
-  DrawRect(8+(i-x)*(CBOXW+2),v,CBOXW,CBOXH);
-  sprintf(buf,"%d:%s",i+1,chname[i]);
-  setxy(9+(i-x)*(CBOXW+2)+2,CBOXH+v-3);
-  putstr(buf);
-  colour=tempcol;
+  if (link[chan]==1) //channel paired with the next one. Draw an extra wide box
+  {
+    i=chan;
+    if (i==active) colour=0xFF0000;
+    if (i>7) {x=8; v+=CBOXH+4;}
+    DrawRect(8+(i-x)*(CBOXW+2),v,CBOXW*2+2,CBOXH);
+    sprintf(buf,"%d:%s",i+1,chname[i]);
+    setxy(9+(i-x)*(CBOXW+2)+2,CBOXH+v-3);
+    putstr(buf);
+    colour=tempcol;
+  }
+  else 
+  {    
+    i=chan;
+    if (i>7) {x=8; v+=CBOXH+4;}
+    if ((chan==0)||(link[chan-1]==0)) //if chan is 0 or isnt linked with previous chan, draw the box
+    {
+      if (i==active) colour=0xFF0000;
+      DrawRect(8+(i-x)*(CBOXW+2),v,CBOXW,CBOXH);
+    }
+    else
+    {
+      if ((i-1)==active) colour=0xFF0000;
+      setWindow(8+(i-x)*(CBOXW+2),v,8+(i-x)*(CBOXW+2)+CBOXW,v+CBOXH);
+    }
+    sprintf(buf,"%d:%s",i+1,chname[i]);
+    setxy(9+(i-x)*(CBOXW+2)+2,CBOXH+v-3);
+    putstr(buf);
+    colour=tempcol;
+  }
   ShowChanVolume(i,volume[i]);
+  ShowChanBalance(i,pan[i]);
   textrotate=0;
 }
 

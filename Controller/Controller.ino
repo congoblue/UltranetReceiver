@@ -186,9 +186,15 @@ void setup() {
   setfont(12,0);
   setxy(160,5);
   putstr_align("Ultranet Monitor Unit");
+  colour=0xFF0000;
+  SymbolDisplay(302, 2, 8);
+  colour=0xFFFFFF;
+  link[0]=1; link[2]=1;
   for (uint8_t i=0; i<16; i++)
+  {
+    pan[i]=127;
     ShowChanBox(i,activechan);
-
+  }
   // Start timers
   TimerSeconds.start();
 
@@ -235,7 +241,8 @@ void loop() {
   {
      KeyHit=0;
      ShowChanBox(activechan,0xFF); //erase select mode
-     activechan++; if (activechan>15) activechan=0;
+     if (link[activechan]!=0) activechan+=2; else activechan++;
+     if (activechan>15) activechan=0;
      ShowChanBox(activechan, activechan); //show new chan selected
      EncValue=volume[activechan];
   }
@@ -243,10 +250,28 @@ void loop() {
   if (EncChange)
   {
     EncChange=0;
-    volume[activechan]=EncValue;
-    ShowChanVolume(activechan,volume[activechan]);
-    audiomixer.chVolume[activechan] = volume[activechan];
-    UpdateFPGAAudioEngine(activechan+1);
+    //volume[activechan]=EncValue;
+    if (link[activechan]==0)
+    {
+      pan[activechan]=EncValue;
+      //ShowChanVolume(activechan,volume[activechan]);
+      ShowChanBalance(activechan,pan[activechan]);
+      audiomixer.chVolume[activechan] = volume[activechan];
+      UpdateFPGAAudioEngine(activechan+1);
+    }
+    else
+    {
+      volume[activechan]=EncValue;
+      volume[activechan+1]=EncValue;
+      ShowChanVolume(activechan,volume[activechan]);
+      ShowChanVolume(activechan+1,volume[activechan+1]);
+      ShowChanBalance(activechan,0);
+      ShowChanBalance(activechan+1,255);
+      audiomixer.chVolume[activechan] = volume[activechan];
+      audiomixer.chVolume[activechan+1] = volume[activechan+1];
+      UpdateFPGAAudioEngine(activechan+1);
+      UpdateFPGAAudioEngine(activechan+2);
+    }
   }
 
 
