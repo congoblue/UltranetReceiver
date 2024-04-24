@@ -20,11 +20,16 @@ extern unsigned char autofontsize;
 extern int fontsize;
 extern unsigned char Trigger;
 extern char chname[16][16];
-extern uint8_t EncValue;
-extern uint8_t EncChange;
-extern uint8_t KeyState;
-extern uint8_t KeyHit;
-extern uint8_t LastKey;
+extern uint8_t level[16];
+extern uint8_t volume[16];
+extern uint8_t pan[16];
+extern uint8_t link[16];
+
+extern volatile uint8_t EncValue;
+extern volatile uint8_t EncChange;
+extern volatile uint8_t KeyState;
+extern volatile uint8_t KeyHit;
+extern volatile uint8_t LastKey;
 
 
 void SenseEncoder(void);
@@ -51,7 +56,7 @@ void ScrollDisplay(void);
 void WaveDisplay(void);
 void ShowPointer(uint8_t val);
 void ErasePointer(void);
-void ShowChanBoxes(void);
+void ShowChanBox(uint8_t chan, uint8_t active);
 void ShowChanVolume(uint8_t ch, uint8_t v);
 void ShowAudioLevel(uint8_t ch, uint8_t v);
 

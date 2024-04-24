@@ -89,11 +89,28 @@ EEPROM-Mapping
 +-------------+------------------+
 
 **************************************************************************************/
+// These define's must be placed at the beginning before #include "SAMDTimerInterrupt.h"
+#define TIMER_INTERRUPT_DEBUG         0
+#define _TIMERINTERRUPT_LOGLEVEL_     0
+
+// Select only one to be true for SAMD21. Must must be placed at the beginning before #include "SAMDTimerInterrupt.h"
+#define USING_TIMER_TC3         true      // Only TC3 can be used for SAMD51
+#define USING_TIMER_TC4         false     // Not to use with Servo library
+#define USING_TIMER_TC5         false
+#define USING_TIMER_TCC         false
+#define USING_TIMER_TCC1        false
+#define USING_TIMER_TCC2        false     // Don't use this, can crash on some boards
+
 
 #include "Controller.h"
 #include "graphics.h"
+#include "SAMDTimerInterrupt.h"
 
-uint8_t level[16];
+#define SELECTED_TIMER      TIMER_TC3
+SAMDTimer ITimer(SELECTED_TIMER);
+
+
+uint8_t activechan=0;
 
 void TimerSecondsFcn() {
   // toggle LED to show, that we are alive
@@ -101,6 +118,20 @@ void TimerSecondsFcn() {
 }
 
 Ticker TimerSeconds(TimerSecondsFcn, 1000, 0, MILLIS);
+
+void TimerHandler()
+{
+  static uint8_t x;
+  //sense encoder and buttons
+  SenseEncoder();
+
+  x++;
+  if (x>50)
+  {
+    x=0;
+    SenseKeys();
+  }
+}
 
 // ******************** SETUP FUNCTION ********************
 void setup() {
@@ -124,6 +155,8 @@ void setup() {
   colour=0xFFFFFF;
   align=ALIGN_CENTRE;
   opclrscr(); 
+
+  ITimer.attachInterruptInterval_MS(2, TimerHandler);
 
   // load bitstream to FPGA and bring it up
 	setup_fpga();
@@ -153,7 +186,8 @@ void setup() {
   setfont(12,0);
   setxy(160,5);
   putstr_align("Ultranet Monitor Unit");
-  ShowChanBoxes();
+  for (uint8_t i=0; i<16; i++)
+    ShowChanBox(i,activechan);
 
   // Start timers
   TimerSeconds.start();
@@ -184,10 +218,6 @@ void loop() {
   // update timer
   TimerSeconds.update();
 
-  //sense encoder and buttons
-  SenseEncoder();
-  SenseKeys();
-
   //update audio meters
   if ((millis()-audioupdatetime)>100)
   {
@@ -198,15 +228,26 @@ void loop() {
         ShowAudioLevel(x,level[x]);
         if (level[x]>8) level[x]-=8; else level[x]=0; //decay
      }
+     SendDataToFPGA(127, 0); //request next set of metering data (cmd 127)
   }
 
-  setxy(0,0);
-  sprintf(buf,"%d:%d:%d",digitalRead(A4),digitalRead(A5),digitalRead(A6));
-  putstr(buf);
+  if (KeyHit)
+  {
+     KeyHit=0;
+     ShowChanBox(activechan,0xFF); //erase select mode
+     activechan++; if (activechan>15) activechan=0;
+     ShowChanBox(activechan, activechan); //show new chan selected
+     EncValue=volume[activechan];
+  }
 
-  setxy(0,14);
-  sprintf(buf,"%d%d%d%d",digitalRead(A0),digitalRead(A1),digitalRead(A2),digitalRead(A3));
-  putstr(buf);
+  if (EncChange)
+  {
+    EncChange=0;
+    volume[activechan]=EncValue;
+    ShowChanVolume(activechan,volume[activechan]);
+    audiomixer.chVolume[activechan] = volume[activechan];
+    UpdateFPGAAudioEngine(activechan+1);
+  }
 
 
 }

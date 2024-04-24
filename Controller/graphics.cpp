@@ -64,11 +64,15 @@ char chname[16][16]=
 
 int xp=0;
 int yp=0;
-uint8_t EncValue=0;
-uint8_t EncChange=0;
-uint8_t KeyState=0xFF;
-uint8_t KeyHit=0;
-uint8_t LastKey=0;
+volatile uint8_t EncValue=0;
+volatile uint8_t EncChange=0;
+volatile uint8_t KeyState=0xFF;
+volatile uint8_t KeyHit=0;
+volatile uint8_t LastKey=0;
+uint8_t level[16]; //metering
+uint8_t volume[16];
+uint8_t pan[16];
+uint8_t link[16];
 
 //font structure
 typedef struct
@@ -339,17 +343,31 @@ const unsigned char HSLCurve[] = {
 void SenseEncoder(void)
 {
    static uint8_t encstate=0xFF;
-   if (encstate==0xFF) encstate=digitalRead(A4)|(digitalRead(A5)<<1);
+
+   //if (encstate==0xFF) encstate=digitalRead(A4)|(digitalRead(A5)<<1);
 
    if ((encstate&1)&&(digitalRead(A4)==0)) //x falling edge
    {
-      if (digitalRead(A5)==0) EncValue++; else EncValue--;
+      if (digitalRead(A5)!=0) 
+      {
+        if (EncValue<252) EncValue+=4; else EncValue=255;
+      }
+      else
+      {
+        if (EncValue>4) EncValue-=4; else EncValue=0;
+      }
       EncChange=1;
    }
-
-   if ((encstate&2)&&(digitalRead(A5)==0)) //y falling edge
+   else if (((encstate&1)==0)&&(digitalRead(A4)!=0)) //x rising edge
    {
-      if (digitalRead(A4)==0) EncValue--; else EncValue++;
+      if (digitalRead(A5)==0) 
+      {
+        if (EncValue<252) EncValue+=4; else EncValue=255;
+      }
+      else
+      {
+        if (EncValue>4) EncValue-=4; else EncValue=0;
+      }
       EncChange=1;    
    }
    encstate=digitalRead(A4)|(digitalRead(A5)<<1);
@@ -1023,25 +1041,22 @@ void ShowAudioLevel(uint8_t ch, uint8_t v)
   fillRect(8+(CBOXW-VOLW-4)+(ch-x)*(CBOXW+2),vp+17+(CBOXH-20-vg),VOLW,vg,color565(0,255,0)); //green below 50%
 }
 
-void ShowChanBoxes(void)
+void ShowChanBox(uint8_t chan, uint8_t active)
 {
-  uint8_t active=4;
   uint32_t tempcol=colour;
   char buf[8];
   uint8_t i,x=0;
   uint16_t v=CBOXT;
   textrotate=1;
-  for (i=0; i<16; i++)
-  {
-    if (i==active) colour=0xFF0000;
-    DrawRect(8+(i-x)*(CBOXW+2),v,CBOXW,CBOXH);
-    sprintf(buf,"%d:%s",i+1,chname[i]);
-    setxy(9+(i-x)*(CBOXW+2)+2,CBOXH+v-3);
-    putstr(buf);
-    if (i==7) {x=8; v+=CBOXH+4;}
-    colour=tempcol;
-    ShowChanVolume(i,i*16);
-  }
+  i=chan;
+  if (i==active) colour=0xFF0000;
+  if (i>7) {x=8; v+=CBOXH+4;}
+  DrawRect(8+(i-x)*(CBOXW+2),v,CBOXW,CBOXH);
+  sprintf(buf,"%d:%s",i+1,chname[i]);
+  setxy(9+(i-x)*(CBOXW+2)+2,CBOXH+v-3);
+  putstr(buf);
+  colour=tempcol;
+  ShowChanVolume(i,volume[i]);
   textrotate=0;
 }
 

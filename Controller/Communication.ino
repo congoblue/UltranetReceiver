@@ -183,7 +183,7 @@ void HandleFPGACommunication() {
   if (Serial1.available() > 0) {
     //FPGA_Version = Serial1.read(); // at the moment only the FPGA-version will be transmitted every second
     x=Serial1.read(); 
-    if (x==0xAA) bufpos=0; //we send 0xAA as packet header then 16 8-bit values giving the input channel peak levels
+    if (x==0xAA) {bufpos=0; Serial.println("x");} //we send 0xAA as packet header then 16 8-bit values giving the input channel peak levels
     else 
     {
        PeakLevel[bufpos]=x;
@@ -280,20 +280,20 @@ String ExecuteCommand(String Command) {
 }
 
 // FPGA-Transmitter
-void SendDataToFPGA(uint8_t cmd, data_32b data) {
+void SendDataToFPGA(uint8_t cmd, uint8_t data) {
   byte SerialCommand[9];
-  data_16b ErrorCheckWord;
+  //data_16b ErrorCheckWord;
 
-  ErrorCheckWord.u16 = data.u8[0] + data.u8[1] + data.u8[2] + data.u8[3];
+  //ErrorCheckWord.u16 = data.u8[0] + data.u8[1] + data.u8[2] + data.u8[3];
 
-  SerialCommand[0] = 65;  // A = start of command
+  SerialCommand[0] = 0xAA; //65;  // A = start of command
   SerialCommand[1] = cmd;
-  SerialCommand[2] = data.u8[3]; // MSB of payload
-  SerialCommand[3] = data.u8[2];
-  SerialCommand[4] = data.u8[1];
-  SerialCommand[5] = data.u8[0]; // LSB of payload
-  SerialCommand[6] = ErrorCheckWord.u8[1]; // MSB
-  SerialCommand[7] = ErrorCheckWord.u8[0]; // LSB
-  SerialCommand[8] = 69;  // E =  end of command
-  Serial1.write(SerialCommand, sizeof(SerialCommand));
+  SerialCommand[2] = data; //data.u8[3]; // MSB of payload
+  //SerialCommand[3] = data.u8[2];
+  //SerialCommand[4] = data.u8[1];
+  //SerialCommand[5] = data.u8[0]; // LSB of payload
+  //SerialCommand[6] = ErrorCheckWord.u8[1]; // MSB
+  //SerialCommand[7] = ErrorCheckWord.u8[0]; // LSB
+  //SerialCommand[8] = 69;  // E =  end of command
+  Serial1.write(SerialCommand, 3);
 }

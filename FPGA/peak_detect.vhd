@@ -22,52 +22,49 @@ port (
 	ch14_in : in signed(top downto 0);
 	ch15_in : in signed(top downto 0);
 	ch16_in : in signed(top downto 0);
-	ch1_out : out signed(top downto 0);
-	ch2_out : out signed(top downto 0);
-	ch3_out : out signed(top downto 0);
-	ch4_out : out signed(top downto 0);
-	ch5_out : out signed(top downto 0);
-	ch6_out : out signed(top downto 0);
-	ch7_out : out signed(top downto 0);
-	ch8_out : out signed(top downto 0);
-	ch9_out : out signed(top downto 0);
-	ch10_out : out signed(top downto 0);
-	ch11_out : out signed(top downto 0);
-	ch12_out : out signed(top downto 0);
-	ch13_out : out signed(top downto 0);
-	ch14_out : out signed(top downto 0);
-	ch15_out : out signed(top downto 0);
-	ch16_out : out signed(top downto 0)
+	ch1_out : out std_logic_vector(top downto 0);
+	ch2_out : out std_logic_vector(top downto 0);
+	ch3_out : out std_logic_vector(top downto 0);
+	ch4_out : out std_logic_vector(top downto 0);
+	ch5_out : out std_logic_vector(top downto 0);
+	ch6_out : out std_logic_vector(top downto 0);
+	ch7_out : out std_logic_vector(top downto 0);
+	ch8_out : out std_logic_vector(top downto 0);
+	ch9_out : out std_logic_vector(top downto 0);
+	ch10_out : out std_logic_vector(top downto 0);
+	ch11_out : out std_logic_vector(top downto 0);
+	ch12_out : out std_logic_vector(top downto 0);
+	ch13_out : out std_logic_vector(top downto 0);
+	ch14_out : out std_logic_vector(top downto 0);
+	ch15_out : out std_logic_vector(top downto 0);
+	ch16_out : out std_logic_vector(top downto 0)
 	);
 end entity peak_detect;
 
 architecture behavior of peak_detect is
 begin
-	peak_reset : process(reset)
-	begin
-		if rising_edge(reset) then
-			ch1_out<=(others => '0');
-			ch2_out<=(others => '0');
-			ch3_out<=(others => '0');
-			ch4_out<=(others => '0');
-			ch5_out<=(others => '0');
-			ch6_out<=(others => '0');
-			ch7_out<=(others => '0');
-			ch8_out<=(others => '0');
-			ch9_out<=(others => '0');
-			ch10_out<=(others => '0');
-			ch11_out<=(others => '0');
-			ch12_out<=(others => '0');
-			ch13_out<=(others => '0');
-			ch14_out<=(others => '0');
-			ch15_out<=(others => '0');
-			ch16_out<=(others => '0');
-		end if;
-	end process peak_reset;
 	s1 : process (ch1_in, ch2_in, ch3_in, ch4_in, ch5_in, ch6_in, ch7_in, ch8_in, ch9_in, ch10_in, ch11_in, ch12_in, ch13_in, ch14_in, ch15_in, ch16_in)
 	begin
-		if (ch1_in>ch1_out) then 
-			ch1_out<=ch1_in;
+		if rising_edge(reset) then
+			ch1_out <= (others => '0');
+			ch2_out <= (others => '0');
+			ch3_out <= (others => '0');
+			ch4_out <= (others => '0');
+			ch5_out <= (others => '0');
+			ch6_out <= (others => '0');
+			ch7_out <= (others => '0');
+			ch8_out <= (others => '0');
+			ch9_out <= (others => '0');
+			ch10_out <= (others => '0');
+			ch11_out <= (others => '0');
+			ch12_out <= (others => '0');
+			ch13_out <= (others => '0');
+			ch14_out <= (others => '0');
+			ch15_out <= (others => '0');
+			ch16_out <= (others => '0');
+		end if;
+		if (ch1_in > signed(ch1_out)) then 
+			ch1_out <= std_logic_vector(ch1_in);
 		end if;
 	end process s1;
 end architecture behavior;
