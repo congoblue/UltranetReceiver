@@ -180,14 +180,15 @@ void HandleUSBCommunication() {
 void HandleFPGACommunication() {
   char x;
   static uint8_t bufpos=0;
-  if (Serial1.available() > 0) {
+  while (Serial1.available() > 0) {
     //FPGA_Version = Serial1.read(); // at the moment only the FPGA-version will be transmitted every second
     x=Serial1.read(); 
-    if (x==0xAA) {bufpos=0; Serial.println("x");} //we send 0xAA as packet header then 16 8-bit values giving the input channel peak levels
+    if (x==0xAA) bufpos=0;   //we send 0xAA as packet header then 16 8-bit values giving the input channel peak levels
     else 
     {
-       PeakLevel[bufpos]=x;
-       if (bufpos<17) bufpos++;
+       if (bufpos<16) PeakLevel[bufpos]=x*2;
+       if (bufpos==16) {UltranetGood=x; /*Serial.println(UltranetGood);Serial.print(PeakLevel[0]);Serial.print(PeakLevel[1]);Serial.print(PeakLevel[2]);Serial.println(PeakLevel[14]);*/}
+       if (bufpos<18) bufpos++;
     }
   }
 }

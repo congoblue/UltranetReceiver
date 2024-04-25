@@ -110,9 +110,9 @@ begin
 					end if;
 				end if;
 				if neg_edge = '1' then  	
-					if bit_cnt = 1 then -- data is one cycle late with respect to the word strobe
+					if bit_cnt = 4 then -- data is one cycle late with respect to the word strobe
 						rx_sampledata <= '1';
-					elsif bit_cnt >= 24+1 then -- reached end of sampledata
+					elsif bit_cnt >= 24+4 then -- reached end of sampledata
 						rx_sampledata <= '0';
 					end if;
 				end if;
@@ -126,6 +126,7 @@ begin
 	end process;
 
 	--sample_out <= "0000" & sample_data(19 downto 0); -- take only 20 bit
+	--sample_out <= "00" & sample_data(23 downto 2); -- take only 22 bit
 	sample_out <= sample_data; -- take all 24 bits
 	channel <= to_unsigned(chn_cnt, channel'length);
 

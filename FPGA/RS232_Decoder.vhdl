@@ -15,22 +15,24 @@ entity RS232_Decoder is
 		RX_DataReady	: in std_logic;
 		RX_Data			: in std_logic_vector(7 downto 0);
 		
-		ch1_peak : in signed(23 downto 0);
-		ch2_peak : in signed(23 downto 0);
-		ch3_peak : in signed(23 downto 0);
-		ch4_peak : in signed(23 downto 0);
-		ch5_peak : in signed(23 downto 0);
-		ch6_peak : in signed(23 downto 0);
-		ch7_peak : in signed(23 downto 0);
-		ch8_peak : in signed(23 downto 0);
-		ch9_peak : in signed(23 downto 0);
-		ch10_peak : in signed(23 downto 0);
-		ch11_peak : in signed(23 downto 0);
-		ch12_peak : in signed(23 downto 0);
-		ch13_peak : in signed(23 downto 0);
-		ch14_peak : in signed(23 downto 0);
-		ch15_peak : in signed(23 downto 0);
-		ch16_peak : in signed(23 downto 0);
+		ch1_peak : in signed(7 downto 0);
+		ch2_peak : in signed(7 downto 0);
+		ch3_peak : in signed(7 downto 0);
+		ch4_peak : in signed(7 downto 0);
+		ch5_peak : in signed(7 downto 0);
+		ch6_peak : in signed(7 downto 0);
+		ch7_peak : in signed(7 downto 0);
+		ch8_peak : in signed(7 downto 0);
+		ch9_peak : in signed(7 downto 0);
+		ch10_peak : in signed(7 downto 0);
+		ch11_peak : in signed(7 downto 0);
+		ch12_peak : in signed(7 downto 0);
+		ch13_peak : in signed(7 downto 0);
+		ch14_peak : in signed(7 downto 0);
+		ch15_peak : in signed(7 downto 0);
+		ch16_peak : in signed(7 downto 0);
+
+		ultranet_valid	: in std_logic;
 
 		TX_TxBusy	: in std_logic;
 		TX_DataReady	: out std_logic;
@@ -98,7 +100,7 @@ architecture Behavioral of RS232_Decoder is
 	signal ErrorCheckWord	: unsigned(15 downto 0);
 	signal PayloadSum			: unsigned(15 downto 0);
 	signal zTX_TxBusy		: std_logic;
-	signal tx_pos_edge			: std_logic;
+	signal tx_ready			: std_logic;
 	signal tx_start			: std_logic;
 	signal tx_send			: std_logic;
 
@@ -112,11 +114,11 @@ begin
 			else
 				pos_edge <= '0';
 			end if;
-			zTX_TxBusy <= TX_TxBusy;
-			if TX_TxBusy = '0' and zTX_TxBusy = '0' then
-				tx_pos_edge <= '1';
+			zTX_TxBusy <= TX_TxBusy; --make a flag for tx busy going low
+			if TX_TxBusy = '0' and zTX_TxBusy = '1' then
+				tx_ready <= '1';
 			else
-				tx_pos_edge <= '0';
+				tx_ready <= '0';
 			end if;
 
 		end if;
@@ -126,54 +128,25 @@ begin
 		variable b1 : std_logic_vector(7 downto 0);	-- 0xAA
 		variable b2 : std_logic_vector(7 downto 0);	-- C
 		variable b3 : std_logic_vector(7 downto 0);	-- V1 = payload 0..127
-		--variable b4 : std_logic_vector(7 downto 0);	-- V2
-		--variable b5 : std_logic_vector(7 downto 0);	-- V3
-		--variable b6 : std_logic_vector(7 downto 0);	-- V4 = LSB of payload
-		--variable b7 : std_logic_vector(7 downto 0);	-- ErrorCheckWord_MSB
-		--variable b8 : std_logic_vector(7 downto 0);	-- ErrorCheckWord_LSB
-		--variable b9 : std_logic_vector(7 downto 0);	-- "E" = 0x45
-	variable tx_count : unsigned(7 downto 0);
+		variable tx_count : unsigned(7 downto 0);
+		variable tx_pulse : unsigned(7 downto 0);
 		
 		
 	begin
 		if (rising_edge(clk)) then
 			if pos_edge = '1' then
-				-- Alle Bytes um ein Byte verschieben und neues Byte hinten einfügen
+				-- a byte has been received from the uart
 				b1 := b2;
 				b2 := b3;
 				b3 := RX_Data;
-				--b3 := b4;
-				--b4 := b5;
-				--b5 := b6;
-				--b6 := b7;
-				--b7 := b8;
-				--b8 := b9;
-				
 				
 				-- State-Machine zum Empfangen von RS232-Daten
-				if ((unsigned(b1)=16#AA#)) then -- and (unsigned(b9)=69)) then
-					-- Anfang und Ende gefunden --> Daten auswerten
-					
-					-- check ErrorCheckWord against sum of payload here. Lateron we could use CRC16 to check payload against errors
-					--ErrorCheckWord <= unsigned(b7 & b8);
-					-- build sum of payload and compare with ErrorCheckWord
-					--PayloadSum <= unsigned("00000000" & b3) + unsigned("00000000" & b4) + unsigned("00000000" & b5) + unsigned("00000000" & b6);
-								
-					--if (PayloadSum = ErrorCheckWord) then
-						-- sum of payload has expected content
+				if (unsigned(b1)=16#AA#) then 
 						
 						if (unsigned(b2)=0) then
 							-- Command = 0 (Main L)
-							--main_volume_l(23 downto 24) <= b3;
-							--main_volume_l(23 downto 16) <= b4;
-							--main_volume_l(15 downto 8) <= b5;
-							--main_volume_l(7 downto 0) <= b6;
 							main_volume_l(7 downto 1) <= b3(6 downto 0); --map the 0..127 value to be 0..254
 						elsif (unsigned(b2)=1) then
-							--ch1_volume_l(23 downto 24) <= b3;
-							--ch1_volume_l(23 downto 16) <= b4;
-							--ch1_volume_l(15 downto 8) <= b5;
-							--ch1_volume_l(7 downto 0) <= b6;
 							ch1_volume_l(7 downto 1) <= b3(6 downto 0);
 						elsif (unsigned(b2)=2) then
 							ch2_volume_l(7 downto 1) <= b3(6 downto 0);
@@ -241,78 +214,94 @@ begin
 						elsif (unsigned(b2)=33) then
 							ch16_volume_r(7 downto 1) <= b3(6 downto 0);
 						elsif (unsigned(b2)=127) then
-							tx_start <= '1'; --send metering packet
+							tx_start <= '1'; --send metering packet							
 						end if;
 					--end if;
 				end if;
 			end if;
 			
-			if tx_start = '1' then
+			if tx_start = '1' then --metering packet has been requested
 				tx_count := (others => '0');
 				tx_start <= '0';
 				Tx_Data <= std_logic_vector( to_unsigned( 16#AA#, 8));
-				tx_send <= '1';
+				tx_send <= '1'; --flag to cause the trigger signal high
 				tx_count := tx_count + 1;
 			end if;
 			
-			if (tx_pos_edge = '1') and (tx_count<17) then
+			if (tx_ready = '1') and (tx_count<19) then
+			   Tx_Data(7) <= '0';
 				if tx_count = 1 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch1_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch1_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 2 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch2_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch2_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 3 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch3_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch3_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 4 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch4_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch4_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 5 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch5_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch5_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 6 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch6_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch6_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 7 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch7_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch7_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 8 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch8_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch8_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 9 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch9_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch9_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 10 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch10_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch10_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 11 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch11_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch11_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 12 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch12_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch12_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 13 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch13_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch13_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 14 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch14_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch14_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 15 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch15_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch15_peak(6 downto 0));
 					tx_send <= '1';
 				elsif tx_count = 16 then
-					Tx_Data(6 downto 0) <= std_logic_vector(ch16_peak(23 downto 17));
+					Tx_Data(6 downto 0) <= std_logic_vector(ch16_peak(6 downto 0));
 					tx_send <= '1';
+				elsif tx_count = 17 then --last byte = ultranet valid signal, 0x55 for good 0x33 for bad
+					if ultranet_valid = '1' then
+						Tx_Data <= std_logic_vector( to_unsigned( 16#55#, 8));
+					else
+						Tx_Data <= std_logic_vector( to_unsigned( 16#33#, 8));
+					end if;
+					tx_send <= '1';
+					peak_reset <= '1';
+				elsif tx_count = 18 then
+					peak_reset <= '0';
 				end if;
 				tx_count := tx_count + 1;
 			end if;
 			
-			if tx_send = '1' then
+			if tx_send = '1' then --put the dataready line high for 1 tick
 			   tx_send <= '0';
 				TX_DataReady <= '1';
+				tx_pulse := to_unsigned(200, 8);
 			else
-				TX_DataReady <= '0';
+				if (tx_pulse > 0) then
+					tx_pulse := tx_pulse - 1;
+				else
+					TX_DataReady <= '0'; --then take it low after 200 ticks
+				end if;
 			end if;
 
 			

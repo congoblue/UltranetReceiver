@@ -73,6 +73,7 @@ uint8_t level[16]; //metering
 uint8_t volume[16];
 uint8_t pan[16];
 uint8_t link[16];
+uint8_t UltranetGood=0;
 
 //font structure
 typedef struct
@@ -933,6 +934,7 @@ void SymbolDisplay(int px, int py, char v)
    if (v==7) p=checkboxtick;
    if (v==8) p=dot;
 
+  setWindow(px,py,px+15,py+15);
   for (y=0; y<16; y++) //bitmap height
   {
     for (x=0; x<16; x++) //bitmap width
@@ -1079,41 +1081,41 @@ void ShowChanBox(uint8_t chan, uint8_t active)
 {
   uint32_t tempcol=colour;
   char buf[8];
-  uint8_t i,x=0;
+  uint8_t x=0;
   uint16_t v=CBOXT;
   textrotate=1;
+  if (chan>7) {x=8; v+=CBOXH+4;}
   if (link[chan]==1) //channel paired with the next one. Draw an extra wide box
   {
-    i=chan;
-    if (i==active) colour=0xFF0000;
-    if (i>7) {x=8; v+=CBOXH+4;}
-    DrawRect(8+(i-x)*(CBOXW+2),v,CBOXW*2+2,CBOXH);
-    sprintf(buf,"%d:%s",i+1,chname[i]);
-    setxy(9+(i-x)*(CBOXW+2)+2,CBOXH+v-3);
+    if (chan==active) colour=0xFF0000;    
+    DrawRect(8+(chan-x)*(CBOXW+2),v,CBOXW*2+2,CBOXH);
+    sprintf(buf,"%d:%s",chan+1,chname[chan]);
+    setxy(9+(chan-x)*(CBOXW+2)+2,CBOXH+v-3);
     putstr(buf);
     colour=tempcol;
   }
   else 
   {    
-    i=chan;
-    if (i>7) {x=8; v+=CBOXH+4;}
     if ((chan==0)||(link[chan-1]==0)) //if chan is 0 or isnt linked with previous chan, draw the box
     {
-      if (i==active) colour=0xFF0000;
-      DrawRect(8+(i-x)*(CBOXW+2),v,CBOXW,CBOXH);
+      if (chan==active) colour=0xFF0000;
+      DrawRect(8+(chan-x)*(CBOXW+2),v,CBOXW,CBOXH);
     }
     else
     {
-      if ((i-1)==active) colour=0xFF0000;
-      setWindow(8+(i-x)*(CBOXW+2),v,8+(i-x)*(CBOXW+2)+CBOXW,v+CBOXH);
+      if ((chan-1)==active) colour=0xFF0000;
+      setWindow(8+(chan-x)*(CBOXW+2),v,8+(chan-x)*(CBOXW+2)+CBOXW,v+CBOXH);
     }
-    sprintf(buf,"%d:%s",i+1,chname[i]);
-    setxy(9+(i-x)*(CBOXW+2)+2,CBOXH+v-3);
+    sprintf(buf,"%d:%s",chan+1,chname[chan]);
+    setxy(9+(chan-x)*(CBOXW+2)+2,CBOXH+v-3);
     putstr(buf);
     colour=tempcol;
   }
-  ShowChanVolume(i,volume[i]);
-  ShowChanBalance(i,pan[i]);
+  ShowChanVolume(chan,volume[chan]);
+  x=pan[chan];
+  if (link[chan]!=0) x=0;
+  if ((chan!=0)&&(link[chan-1]!=0)) x=255;
+  ShowChanBalance(chan,x);
   textrotate=0;
 }
 

@@ -24,6 +24,7 @@ extern uint8_t level[16];
 extern uint8_t volume[16];
 extern uint8_t pan[16];
 extern uint8_t link[16];
+extern uint8_t UltranetGood;
 
 extern volatile uint8_t EncValue;
 extern volatile uint8_t EncChange;

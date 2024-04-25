@@ -56,8 +56,8 @@ architecture Behavioral of i2s_tx is
     signal shift_reg: std_logic_vector(SAMPLE_WIDTH downto 0);
                
     --set optional debugging signals
-    attribute mark_debug of shift_reg : signal is boolean'image(DEBUG);
-    attribute keep of shift_reg : signal is boolean'image(debug); 
+    --attribute mark_debug of shift_reg : signal is boolean'image(DEBUG);
+    --attribute keep of shift_reg : signal is boolean'image(debug); 
 begin
 
     

@@ -111,6 +111,7 @@ SAMDTimer ITimer(SELECTED_TIMER);
 
 
 uint8_t activechan=0;
+uint8_t UltranetPrev=0;
 
 void TimerSecondsFcn() {
   // toggle LED to show, that we are alive
@@ -235,6 +236,14 @@ void loop() {
         if (level[x]>8) level[x]-=8; else level[x]=0; //decay
      }
      SendDataToFPGA(127, 0); //request next set of metering data (cmd 127)
+
+     if (UltranetPrev!=UltranetGood)
+     {
+        UltranetPrev=UltranetGood;
+        if (UltranetGood==0x55) colour=0x00FF00; else colour=0xFF0000;
+        SymbolDisplay(302, 2, 8);
+        colour=0xFFFFFF;
+     }
   }
 
   if (KeyHit)
