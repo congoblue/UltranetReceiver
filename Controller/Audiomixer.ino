@@ -1,3 +1,5 @@
+#include "graphics.h"
+
 uint8_t Saturate(uint16_t value, uint8_t max) {
   if (value>max) {
     return max;
@@ -6,36 +8,36 @@ uint8_t Saturate(uint16_t value, uint8_t max) {
   }
 }
 
-void InitAudiomixer() {
-  audiomixer.mainVolumeLeft = 255; // set to 100%
-  audiomixer.mainVolumeRight = 255; // set to 100%
-  UpdateFPGAAudioEngine(0); // send main to FPGA
-
-  uint8_t i;
-  for (i=1; i<=16; i++) {
-    audiomixer.chVolume[i-1] = 127; // set to 0%
-    audiomixer.chBalance[i-1] = 127; // bring to center
-    UpdateFPGAAudioEngine(i); // send values to FPGA
-  }
-}
-
 void UpdateFPGAAudioEngine(uint8_t channel) {
   // send volume for left and right for desired channel
 
   uint32_t volume_left;
   uint32_t volume_right;
+  uint8_t pv;
 
-  // value is between 0...100. We will change this value to meet 8bit = 0..256 to make calculation in FPGA a bit easier
-  // within FPGA we will do an integer-calculation like: ((AudioSampleData * ReceivedValueFromMicrocontroller) >> 8) = DataForDAC
+  // value is between 0...255. Sent as 0..127 (all serial comms <128 except for start flag)
 
   if (channel == 0) {
     // main has only left or right, no balance
-    volume_left = audiomixer.mainVolumeLeft;
-    volume_right = audiomixer.mainVolumeRight;
+    volume_left = mainvol[0];
+    volume_right = mainvol[1];
   }else{
     // channel 1..16
-    volume_left = audiomixer.chVolume[channel-1] * Saturate((255 - audiomixer.chBalance[channel-1]) * 2, 255) / 256;
-    volume_right = audiomixer.chVolume[channel-1] * Saturate(audiomixer.chBalance[channel-1] * 2, 255) / 256;
+    if (link[channel-1]==0) //if this channel is not linked
+      pv=pan[channel-1];
+    else
+    {
+      if (link[channel-1]==1) pv=0; else pv=255; //fixed hard pan for linked channels
+    }
+    if ((solo==0xFF)||(solo==channel-1)) //if not solo mode, or this channel solo
+    {
+      volume_left = volume[channel-1] * Saturate((255 - pv) * 2, 255) / 256;
+      volume_right = volume[channel-1] * Saturate(pv * 2, 255) / 256;
+    }
+    else
+    {
+      volume_left=0; volume_right=0;
+    }
   }
 
   // send data to FPGA

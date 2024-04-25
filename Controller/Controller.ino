@@ -101,10 +101,12 @@ EEPROM-Mapping
 #define USING_TIMER_TCC1        false
 #define USING_TIMER_TCC2        false     // Don't use this, can crash on some boards
 
+#define EEPROM_EMULATION_SIZE     1024
 
 #include "Controller.h"
 #include "graphics.h"
 #include "SAMDTimerInterrupt.h"
+#include <FlashStorage_SAMD.h>
 
 #define SELECTED_TIMER      TIMER_TC3
 SAMDTimer ITimer(SELECTED_TIMER);
@@ -112,6 +114,8 @@ SAMDTimer ITimer(SELECTED_TIMER);
 
 uint8_t activechan=0;
 uint8_t UltranetPrev=0;
+uint8_t PeakLevel[17];
+uint8_t EncMode=0;
 
 void TimerSecondsFcn() {
   // toggle LED to show, that we are alive
@@ -131,6 +135,69 @@ void TimerHandler()
   {
     x=0;
     SenseKeys();
+  }
+}
+
+//--- recall eeprom settings. Init if not previously set
+void EepromRecall(void)
+{
+  uint8_t i;
+  if (EEPROM.read(EEP_SIG)!=0xA5) //not setup - write defaults
+  {
+      EEPROM.write(EEP_SIG,0xA5);
+      for (i=0; i<2; i++)
+      {
+        mainvol[i]=255;
+        EEPROM.write(EEP_MAINL+i,mainvol[i]);
+      }
+      for (i=0; i<16; i++)
+      {        
+        volume[i]=127;
+        EEPROM.write(EEP_VOL+i,volume[i]);
+        pan[i]=127;
+        EEPROM.write(EEP_PAN+i,pan[i]);
+        link[i]=0;
+        EEPROM.write(EEP_LINK+i,link[i]);
+      }
+      EEPROM.commit();
+  }
+
+  for (i=0; i<2; i++)
+  {
+    mainvol[i]=EEPROM.read(EEP_MAINL+i);
+    UpdateFPGAAudioEngine(0); // send main to FPGA
+  }
+
+  for (i=0; i<16; i++)
+  {
+    volume[i]=EEPROM.read(EEP_VOL+i);
+    pan[i]=EEPROM.read(EEP_PAN+i);
+    link[i]=EEPROM.read(EEP_LINK+i);
+    UpdateFPGAAudioEngine(i+1); // send values to FPGA
+  }
+}
+
+//--- compare eeprom settings with current, store if different
+void EepromUpdate(void)
+{
+  static uint32_t lastupdate=millis(); //protect against update too often
+  uint8_t i, change=0;
+
+  if ((millis()-lastupdate)<60000) return; //don't update if less than 60s
+  for (i=0; i<2; i++)
+  {
+    if (mainvol[i]!=EEPROM.read(EEP_MAINL+i)) {change=1; EEPROM.write(EEP_MAINL+i,mainvol[i]);}
+  }
+  for (i=0; i<16; i++)
+  {        
+    if (volume[i]!=EEPROM.read(EEP_VOL+i)) {change=1; EEPROM.write(EEP_VOL+i,volume[i]);}
+    if (pan[i]!=EEPROM.read(EEP_PAN+i)) {change=1; EEPROM.write(EEP_PAN+i,pan[i]); }
+    if (link[i]!=EEPROM.read(EEP_LINK+i)) {change=1; EEPROM.write(EEP_LINK+i,link[i]);}
+  }
+  if (change!=0) 
+  {
+    EEPROM.commit();
+    lastupdate=millis();
   }
 }
 
@@ -167,11 +234,7 @@ void setup() {
   Serial.setTimeout(1000); // Timeout for commands
   Serial1.begin(19200); // initialize Hardware-UART for communication with FPGA
 
-  // initialize EEPROM
-  #if UseEEPROM == 1
-    InitEEPROM();
-    readConfig();
-  #endif
+  EepromRecall();
 
   #if UseEthernet == 1
     // initialize ethernet via W5500
@@ -190,22 +253,24 @@ void setup() {
   colour=0xFF0000;
   SymbolDisplay(302, 2, 8);
   colour=0xFFFFFF;
-  link[0]=1; link[2]=1;
+  link[0]=1; link[1]=2; link[2]=1; link[3]=2;
   for (uint8_t i=0; i<16; i++)
   {
-    pan[i]=127;
     ShowChanBox(i,activechan);
+    ShowChanVolume(i,volume[i]);
+    ShowChanBalance(i,pan[i]);
   }
+  ShowSoftKeys();
+
   // Start timers
   TimerSeconds.start();
 
-  // send standard-values to FPGA
-  InitAudiomixer();
 }
 
 // ******************** MAIN FUNCTION ********************
 void loop() {
   uint32_t audioupdatetime=0;
+  uint32_t eepromupdatetime=millis()+15000;
   uint8_t x,v;
   char buf[8];
   #if UseEthernet == 1
@@ -237,7 +302,7 @@ void loop() {
      }
      SendDataToFPGA(127, 0); //request next set of metering data (cmd 127)
 
-     if (UltranetPrev!=UltranetGood)
+     if (UltranetPrev!=UltranetGood) //update ultranet status dot if changed
      {
         UltranetPrev=UltranetGood;
         if (UltranetGood==0x55) colour=0x00FF00; else colour=0xFF0000;
@@ -246,38 +311,70 @@ void loop() {
      }
   }
 
+  //check if any changes to store to eeprom
+  if ((millis()-eepromupdatetime)>10000)
+  { 
+      eepromupdatetime=millis();
+      EepromUpdate();  //check if anything is different and store if so
+  }
+
+  //process key presses
   if (KeyHit)
   {
      KeyHit=0;
-     ShowChanBox(activechan,0xFF); //erase select mode
-     if (link[activechan]!=0) activechan+=2; else activechan++;
-     if (activechan>15) activechan=0;
-     ShowChanBox(activechan, activechan); //show new chan selected
-     EncValue=volume[activechan];
+     if ((LastKey==3)||(LastKey==4))
+     {
+      ShowChanBox(activechan,0xFF); //erase select mode on the chan we are leaving
+      if (LastKey==3) {if (link[activechan]!=0) activechan+=2; else activechan++; if (activechan>15) activechan=0;}
+      if (LastKey==4) {activechan--; if (activechan>15) activechan=15; if (link[activechan]!=0) activechan--;}      
+      ShowChanBox(activechan, activechan); //show new chan selected
+      if (EncMode==0) EncValue=volume[activechan];
+      if (EncMode==1) EncValue=pan[activechan];
+      Serial.print("Act:"); Serial.print(activechan); Serial.print(" Lk:"); Serial.println(link[activechan]);
+
+     }
+     if (LastKey==2)
+     {
+       if ((solo==0xFF)||((solo!=0xFF)&&(solo!=activechan))) //no solo currently, or solo on different channel
+       {
+          if (solo!=0xFF) {x=solo; solo=0xFF; ShowChanBox(x, 0xFF);} //erase solo mode on old chan
+          solo=activechan;
+          ShowChanBox(activechan,activechan);
+       }
+       else
+       {
+          solo=0xFF;
+          ShowChanBox(activechan,activechan);          
+       }
+       for (x=0; x<16; x++) UpdateFPGAAudioEngine(x+1);
+     } 
+     if (LastKey==1)
+     {
+        EncMode++; if (EncMode==2) EncMode=0;
+        if (EncMode==0) SetSoftkeyText(3,"Volume");
+        if (EncMode==1) SetSoftkeyText(3,"  Pan  ");
+        ShowSoftKeys();
+     }
   }
 
+  //process encoder change
   if (EncChange)
   {
     EncChange=0;
-    //volume[activechan]=EncValue;
-    if (link[activechan]==0)
+    if (link[activechan]==0) //current chan is not linked
     {
-      pan[activechan]=EncValue;
-      //ShowChanVolume(activechan,volume[activechan]);
-      ShowChanBalance(activechan,pan[activechan]);
-      audiomixer.chVolume[activechan] = volume[activechan];
+      if (EncMode==0) {volume[activechan]=EncValue; ShowChanVolume(activechan,volume[activechan]);}
+      if (EncMode==1) {pan[activechan]=EncValue; ShowChanBalance(activechan,pan[activechan]);}
       UpdateFPGAAudioEngine(activechan+1);
     }
-    else
+    else //current chan is linked to the next one (the activechan will always be the first of a linked pair)
     {
+      if (EncMode==0) {
       volume[activechan]=EncValue;
       volume[activechan+1]=EncValue;
       ShowChanVolume(activechan,volume[activechan]);
       ShowChanVolume(activechan+1,volume[activechan+1]);
-      ShowChanBalance(activechan,0);
-      ShowChanBalance(activechan+1,255);
-      audiomixer.chVolume[activechan] = volume[activechan];
-      audiomixer.chVolume[activechan+1] = volume[activechan+1];
+      } //pan cannot be changed for paired channels
       UpdateFPGAAudioEngine(activechan+1);
       UpdateFPGAAudioEngine(activechan+2);
     }

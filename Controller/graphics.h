@@ -20,11 +20,13 @@ extern unsigned char autofontsize;
 extern int fontsize;
 extern unsigned char Trigger;
 extern char chname[16][16];
+extern uint8_t mainvol[2];
 extern uint8_t level[16];
 extern uint8_t volume[16];
 extern uint8_t pan[16];
 extern uint8_t link[16];
 extern uint8_t UltranetGood;
+extern uint8_t solo;
 
 extern volatile uint8_t EncValue;
 extern volatile uint8_t EncChange;
@@ -61,6 +63,8 @@ void ShowChanBox(uint8_t chan, uint8_t active);
 void ShowChanVolume(uint8_t ch, uint8_t v);
 void ShowChanBalance(uint8_t ch, uint8_t v);
 void ShowAudioLevel(uint8_t ch, uint8_t v);
+void ShowSoftKeys(void);
+void SetSoftkeyText(uint8_t key, char* txt);
 
 void disp_menuclear(void);
 void disp_putmenuline(char y, const char *s, char style);

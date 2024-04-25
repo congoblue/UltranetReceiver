@@ -34,17 +34,16 @@ const char compile_date[] = __DATE__ " " __TIME__;
   #include <PubSubClient.h>
 #endif
 
+//eeprom locations
+#define EEP_SIG 1
+#define EEP_MAINL 8
+#define EEP_MAINR 9
+#define EEP_VOL 16
+#define EEP_PAN 32
+#define EEP_LINK 48 //48-63
+
 // defines for FPGA
 uint8_t FPGA_Version = 0; // will be read from FPGA directly
-uint8_t PeakLevel[17];
-
-// variables
-struct {
-  uint8_t mainVolumeLeft;
-  uint8_t mainVolumeRight;
-  uint8_t chVolume[16];
-  uint8_t chBalance[16];
-}audiomixer;
 
 // some helpful data-structures
 typedef union 
@@ -63,5 +62,5 @@ typedef union
     uint8_t u8[2];
 }data_16b;
 
-extern uint8_t level[16];
+
 

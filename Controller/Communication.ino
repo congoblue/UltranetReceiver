@@ -202,12 +202,12 @@ String ExecuteCommand(String Command) {
 
     if (Command.indexOf("vol_main_l") > -1) {
       // received command "vol_main_l@yyy"
-      audiomixer.mainVolumeLeft = Command.substring(Command.indexOf("@")+1).toInt();
+      mainvol[0] = Command.substring(Command.indexOf("@")+1).toInt();
       UpdateFPGAAudioEngine(0); // update main-channel
       Answer = "OK";
     }else if (Command.indexOf("vol_main_r") > -1) {
       // received command "vol_main_r@yyy"
-      audiomixer.mainVolumeRight = Command.substring(Command.indexOf("@")+1).toInt();
+      mainvol[1] = Command.substring(Command.indexOf("@")+1).toInt();
       UpdateFPGAAudioEngine(0); // update main-channel
       Answer = "OK";
     }else if (Command.indexOf("vol_ch") > -1) {
@@ -216,7 +216,7 @@ String ExecuteCommand(String Command) {
       uint8_t value = Command.substring(Command.indexOf("@")+1).toInt();
 
       if ((channel>=1) && (channel<=16) && (value>=0) && (value<=100)) {
-        audiomixer.chVolume[channel-1] = value;
+        volume[channel-1] = value;
         UpdateFPGAAudioEngine(channel);
         Answer = "OK";
       }else{
@@ -228,7 +228,7 @@ String ExecuteCommand(String Command) {
       uint8_t value = Command.substring(Command.indexOf("@")+1).toInt();
 
       if ((channel>=1) && (channel<=16) && (value>=0) && (value<=100)) {
-        audiomixer.chBalance[channel-1] = value;
+        pan[channel-1] = value;
         UpdateFPGAAudioEngine(channel);
         Answer = "OK";
       }else{
@@ -282,19 +282,10 @@ String ExecuteCommand(String Command) {
 
 // FPGA-Transmitter
 void SendDataToFPGA(uint8_t cmd, uint8_t data) {
-  byte SerialCommand[9];
-  //data_16b ErrorCheckWord;
-
-  //ErrorCheckWord.u16 = data.u8[0] + data.u8[1] + data.u8[2] + data.u8[3];
+  byte SerialCommand[3];
 
   SerialCommand[0] = 0xAA; //65;  // A = start of command
   SerialCommand[1] = cmd;
   SerialCommand[2] = data; //data.u8[3]; // MSB of payload
-  //SerialCommand[3] = data.u8[2];
-  //SerialCommand[4] = data.u8[1];
-  //SerialCommand[5] = data.u8[0]; // LSB of payload
-  //SerialCommand[6] = ErrorCheckWord.u8[1]; // MSB
-  //SerialCommand[7] = ErrorCheckWord.u8[0]; // LSB
-  //SerialCommand[8] = 69;  // E =  end of command
   Serial1.write(SerialCommand, 3);
 }

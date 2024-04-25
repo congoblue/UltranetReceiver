@@ -47,20 +47,27 @@ char chname[16][16]=
   "DrumsR",
   "PianoL",
   "PianoR",
+  "Bass",
   "Acoustic",
-  "Electric",
+  "EGuit/Ce",
   "Inst1",
-  "Inst2",
   "Vox1",
   "Vox2",
   "Vox3",
   "Vox4",
+  "AmbL",
+  "AmbR",
   "Extra",
   "Lead",
-  "AmbL",
-  "AmbR"
 };
 
+char sktext[4][16]=
+{
+   "<<",
+   ">>",
+   "Solo",
+   "Volume"
+};
 
 int xp=0;
 int yp=0;
@@ -69,10 +76,12 @@ volatile uint8_t EncChange=0;
 volatile uint8_t KeyState=0;
 volatile uint8_t KeyHit=0;
 volatile uint8_t LastKey=0;
+uint8_t mainvol[2]; 
 uint8_t level[16]; //metering
-uint8_t volume[16];
+uint8_t volume[16]; //channel vol
 uint8_t pan[16];
 uint8_t link[16];
+uint8_t solo=0xFF;
 uint8_t UltranetGood=0;
 
 //font structure
@@ -1029,7 +1038,7 @@ void BitmapDisplay(uint8_t n, uint32_t txp, uint32_t typ, uint8_t overlay)
 
   #define CBOXW 37
   #define CBOXH 80
-  #define CBOXT 65
+  #define CBOXT 30
   #define VOLW 6
   #define PANW 15
 
@@ -1055,6 +1064,8 @@ void ShowChanBalance(uint8_t ch, uint8_t v)
   uint8_t vv,x=0; 
   uint16_t vp=CBOXT,bgcol;
   if (ch>=8) {x=8; vp+=CBOXH+4;}
+  if (link[ch]==1) v=0;
+  if (link[ch]==2) v=255; //show fixed pan for linked channels
   vv=v*PANW/256;
   fillRect(24+(ch-x)*(CBOXW+2),vp+5,PANW+PANTHUMB,4,color565(96,96,96)); //the full bar
   fillRect(24+(ch-x)*(CBOXW+2)+vv,vp+5,PANTHUMB,4,color565(255,255,255)); //the active pan blob
@@ -1088,22 +1099,25 @@ void ShowChanBox(uint8_t chan, uint8_t active)
   if (link[chan]==1) //channel paired with the next one. Draw an extra wide box
   {
     if (chan==active) colour=0xFF0000;    
+    if (chan==solo) colour=0xFFFF00;
     DrawRect(8+(chan-x)*(CBOXW+2),v,CBOXW*2+2,CBOXH);
     sprintf(buf,"%d:%s",chan+1,chname[chan]);
     setxy(9+(chan-x)*(CBOXW+2)+2,CBOXH+v-3);
     putstr(buf);
     colour=tempcol;
   }
-  else 
+  else //not paired, ot may be paired with prev
   {    
-    if ((chan==0)||(link[chan-1]==0)) //if chan is 0 or isnt linked with previous chan, draw the box
+    if ((chan==0)||(link[chan]==0)) //if chan is 0 or isnt linked with previous chan, draw the box
     {
       if (chan==active) colour=0xFF0000;
+      if (chan==solo) colour=0xFFFF00; 
       DrawRect(8+(chan-x)*(CBOXW+2),v,CBOXW,CBOXH);
     }
     else
     {
       if ((chan-1)==active) colour=0xFF0000;
+      if ((chan-1)==solo) colour=0xFFFF00;
       setWindow(8+(chan-x)*(CBOXW+2),v,8+(chan-x)*(CBOXW+2)+CBOXW,v+CBOXH);
     }
     sprintf(buf,"%d:%s",chan+1,chname[chan]);
@@ -1111,15 +1125,29 @@ void ShowChanBox(uint8_t chan, uint8_t active)
     putstr(buf);
     colour=tempcol;
   }
-  ShowChanVolume(chan,volume[chan]);
-  x=pan[chan];
-  if (link[chan]!=0) x=0;
-  if ((chan!=0)&&(link[chan-1]!=0)) x=255;
-  ShowChanBalance(chan,x);
   textrotate=0;
 }
 
+#define SKTOP 200
+#define SKHT 35
+#define SKWID 68
+void ShowSoftKeys(void)
+{
+   uint8_t i;
+   for (i=0; i<4; i++)
+   {
+      DrawRect(20+(i*(SKWID+5)),SKTOP,SKWID,SKHT);
+      setxy(20+(i*(SKWID+5))+SKWID/2,SKTOP+(SKHT/2)-7);
+      putstr_align(&sktext[i][0]);
+   }
 
+}
+
+void SetSoftkeyText(uint8_t key, char* txt)
+{
+   if (key>3) return;
+   strncpy(&sktext[key][0],txt,15);
+}
 
 
 //---------------------------------------------------------
