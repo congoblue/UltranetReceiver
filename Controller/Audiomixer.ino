@@ -29,12 +29,16 @@ void UpdateFPGAAudioEngine(uint8_t channel) {
     {
       if (link[channel-1]==1) pv=0; else pv=255; //fixed hard pan for linked channels
     }
-    if ((solo==0xFF)||(solo==channel-1)) //if not solo mode, or this channel solo
+    if ((solo==0xFF)||(solo==channel-1)||((link[channel-1]==2)&&(solo==channel-2))) //if not solo mode, or this channel solo
     {
       volume_left = volume[channel-1] * Saturate((255 - pv) * 2, 255) / 256;
       volume_right = volume[channel-1] * Saturate(pv * 2, 255) / 256;
     }
     else
+    {
+      volume_left=0; volume_right=0;
+    }
+    if (mute[channel-1]!=0)
     {
       volume_left=0; volume_right=0;
     }

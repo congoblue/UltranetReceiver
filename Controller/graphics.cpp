@@ -81,6 +81,7 @@ uint8_t level[16]; //metering
 uint8_t volume[16]; //channel vol
 uint8_t pan[16];
 uint8_t link[16];
+uint8_t mute[16];
 uint8_t solo=0xFF;
 uint8_t UltranetGood=0;
 
@@ -1051,24 +1052,29 @@ void BitmapDisplay(uint8_t n, uint32_t txp, uint32_t typ, uint8_t overlay)
 void ShowChanVolume(uint8_t ch, uint8_t v)
 {
   uint8_t vv,x=0; 
-  uint16_t vp=CBOXT,bgcol;
+  uint16_t vp=CBOXT,fgcol;
   if (ch>=8) {x=8; vp+=CBOXH+4;}
   vv=v*(CBOXH-20)/256;
-  if (v==0) bgcol=color565(96,0,0); else bgcol=color565(96,96,96);
-  fillRect(27+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,bgcol); //the inactive volume
-  fillRect(27+(ch-x)*(CBOXW+2),vp+17+(CBOXH-20-vv),VOLW,vv,color565(255,255,255)); //the active volume
+  fillRect(27+(ch-x)*(CBOXW+2),vp+17,VOLW,(CBOXH-20)-vv,color565(96,96,96)); //the inactive volume
+  if (mute[ch]!=0) fgcol=color565(128,128,128); else fgcol=color565(255,255,255);
+  if (v!=0) fillRect(27+(ch-x)*(CBOXW+2),vp+17+(CBOXH-20-vv),VOLW,vv,fgcol); //the active volume
+
+  if (link[ch]==1) ShowChanVolume(ch+1,volume[ch+1]);
 }
 
 void ShowChanBalance(uint8_t ch, uint8_t v)
 {
   uint8_t vv,x=0; 
-  uint16_t vp=CBOXT,bgcol;
+  uint16_t vp=CBOXT,fgcol;
   if (ch>=8) {x=8; vp+=CBOXH+4;}
   if (link[ch]==1) v=0;
   if (link[ch]==2) v=255; //show fixed pan for linked channels
   vv=v*PANW/256;
   fillRect(24+(ch-x)*(CBOXW+2),vp+5,PANW+PANTHUMB,4,color565(96,96,96)); //the full bar
-  fillRect(24+(ch-x)*(CBOXW+2)+vv,vp+5,PANTHUMB,4,color565(255,255,255)); //the active pan blob
+  if (mute[ch]!=0) fgcol=color565(128,128,128); else fgcol=color565(255,255,255);
+  fillRect(24+(ch-x)*(CBOXW+2)+vv,vp+5,PANTHUMB,4,fgcol); //the active pan blob
+
+  if (link[ch]==1) ShowChanBalance(ch+1,pan[ch+1]);
 }
 
 void ShowAudioLevel(uint8_t ch, uint8_t v)
@@ -1098,24 +1104,30 @@ void ShowChanBox(uint8_t chan, uint8_t active)
   if (chan>7) {x=8; v+=CBOXH+4;}
   if (link[chan]==1) //channel paired with the next one. Draw an extra wide box
   {
+    if (mute[chan]!=0) colour=0x808080;
     if (chan==active) colour=0xFF0000;    
     if (chan==solo) colour=0xFFFF00;
     DrawRect(8+(chan-x)*(CBOXW+2),v,CBOXW*2+2,CBOXH);
     sprintf(buf,"%d:%s",chan+1,chname[chan]);
     setxy(9+(chan-x)*(CBOXW+2)+2,CBOXH+v-3);
     putstr(buf);
+    sprintf(buf,"%d:%s",chan+2,chname[chan+1]); //write the chan name for the linked chan
+    setxy(9+(chan+1-x)*(CBOXW+2)+2,CBOXH+v-3);
+    putstr(buf);
     colour=tempcol;
   }
-  else //not paired, ot may be paired with prev
+  else //not paired, or may be paired with prev
   {    
     if ((chan==0)||(link[chan]==0)) //if chan is 0 or isnt linked with previous chan, draw the box
     {
+      if (mute[chan]!=0) colour=0x808080;
       if (chan==active) colour=0xFF0000;
       if (chan==solo) colour=0xFFFF00; 
       DrawRect(8+(chan-x)*(CBOXW+2),v,CBOXW,CBOXH);
     }
-    else
+    else //the 2nd chan in a linked pair
     {
+      if (mute[chan]!=0) colour=0x808080;
       if ((chan-1)==active) colour=0xFF0000;
       if ((chan-1)==solo) colour=0xFFFF00;
       setWindow(8+(chan-x)*(CBOXW+2),v,8+(chan-x)*(CBOXW+2)+CBOXW,v+CBOXH);
@@ -1126,6 +1138,32 @@ void ShowChanBox(uint8_t chan, uint8_t active)
     colour=tempcol;
   }
   textrotate=0;
+}
+
+void EraseChanBox(uint8_t chan)
+{
+  uint8_t x=0;
+  uint16_t v=CBOXT;
+  if (chan>7) {x=8; v+=CBOXH+4;}
+  fillRect(8+(chan-x)*(CBOXW+2)+CBOXW-1,v,4,CBOXH,0);
+}
+
+void ShowMasterVolume(uint8_t v, uint8_t sel)
+{
+  uint32_t tempcol=colour;
+  uint8_t vv;
+  char buf[8];
+  uint16_t fgcol;
+  if (sel) colour=0xFF0000;
+  DrawRect(318-CBOXH-45, 2, CBOXH+45, 25);
+  sprintf(buf,"Master");
+  setxy(318-CBOXH-42,8);
+  putstr(buf);
+  vv=v*(CBOXH-20)/256;
+  fillRect(330-CBOXH+vv,10,(CBOXH-20)-vv,8,color565(96,96,96)); //the inactive volume
+  fgcol=color565(255,255,255);
+  if (v!=0) fillRect(330-CBOXH,10,vv,8,fgcol); //the active volume
+  colour=tempcol;
 }
 
 #define SKTOP 200

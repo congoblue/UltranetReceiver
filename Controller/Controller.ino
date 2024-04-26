@@ -145,6 +145,7 @@ void EepromRecall(void)
   if (EEPROM.read(EEP_SIG)!=0xA5) //not setup - write defaults
   {
       EEPROM.write(EEP_SIG,0xA5);
+      Serial.println("Eeprom set defaults");
       for (i=0; i<2; i++)
       {
         mainvol[i]=255;
@@ -168,11 +169,14 @@ void EepromRecall(void)
     UpdateFPGAAudioEngine(0); // send main to FPGA
   }
 
+  Serial.print("V:");  
   for (i=0; i<16; i++)
   {
     volume[i]=EEPROM.read(EEP_VOL+i);
     pan[i]=EEPROM.read(EEP_PAN+i);
     link[i]=EEPROM.read(EEP_LINK+i);
+    mute[i]=0; //don't save mute state
+    Serial.print(volume[i]); Serial.print(" ");   
     UpdateFPGAAudioEngine(i+1); // send values to FPGA
   }
 }
@@ -197,6 +201,7 @@ void EepromUpdate(void)
   if (change!=0) 
   {
     EEPROM.commit();
+    Serial.println("Eeprom write");
     lastupdate=millis();
   }
 }
@@ -248,12 +253,12 @@ void setup() {
 
   //initial display
   setfont(12,0);
-  setxy(160,5);
-  putstr_align("Ultranet Monitor Unit");
+  setxy(22,5);
+  putstr("Ultranet");
   colour=0xFF0000;
-  SymbolDisplay(302, 2, 8);
+  SymbolDisplay(2, 2, 8);
   colour=0xFFFFFF;
-  link[0]=1; link[1]=2; link[2]=1; link[3]=2;
+  //link[0]=1; link[1]=2; link[2]=1; link[3]=2; //debug... fixed links
   for (uint8_t i=0; i<16; i++)
   {
     ShowChanBox(i,activechan);
@@ -261,6 +266,10 @@ void setup() {
     ShowChanBalance(i,pan[i]);
   }
   ShowSoftKeys();
+  ShowMasterVolume(mainvol[0],0);
+
+  activechan=0;
+  EncValue=volume[activechan];
 
   // Start timers
   TimerSeconds.start();
@@ -273,6 +282,7 @@ void loop() {
   uint32_t eepromupdatetime=millis()+15000;
   uint8_t x,v;
   char buf[8];
+  static uint8_t lk=0;
   #if UseEthernet == 1
     // handle ethernet clients
     HandleHTTPClients();
@@ -306,13 +316,13 @@ void loop() {
      {
         UltranetPrev=UltranetGood;
         if (UltranetGood==0x55) colour=0x00FF00; else colour=0xFF0000;
-        SymbolDisplay(302, 2, 8);
+        SymbolDisplay(2, 2, 8);
         colour=0xFFFFFF;
      }
   }
 
   //check if any changes to store to eeprom
-  if ((millis()-eepromupdatetime)>10000)
+  if ((millis()-eepromupdatetime)>10000) //10sec
   { 
       eepromupdatetime=millis();
       EepromUpdate();  //check if anything is different and store if so
@@ -322,24 +332,54 @@ void loop() {
   if (KeyHit)
   {
      KeyHit=0;
-     if ((LastKey==3)||(LastKey==4))
+     if ((LastKey==3)||(LastKey==4)) //left/right
      {
-      ShowChanBox(activechan,0xFF); //erase select mode on the chan we are leaving
-      if (LastKey==3) {if (link[activechan]!=0) activechan+=2; else activechan++; if (activechan>15) activechan=0;}
-      if (LastKey==4) {activechan--; if (activechan>15) activechan=15; if (link[activechan]!=0) activechan--;}      
-      ShowChanBox(activechan, activechan); //show new chan selected
-      if (EncMode==0) EncValue=volume[activechan];
-      if (EncMode==1) EncValue=pan[activechan];
-      Serial.print("Act:"); Serial.print(activechan); Serial.print(" Lk:"); Serial.println(link[activechan]);
+      if (KeyState==0x13) //lr held
+      {        
+        ShowChanBox(activechan,0xFF); //erase select mode on the chan we are leaving
+        activechan=lk;
+        if (activechan&1) activechan--;
+        if (link[activechan]==0)
+        {
+          link[activechan]=1; link[activechan+1]=2;
+          EraseChanBox(activechan); //erase the middle area that's different when you have 2 boxes
+          ShowChanBox(activechan, activechan); 
+          ShowChanBalance(activechan,pan[activechan]);
+        }
+        else 
+        {
+          link[activechan]=0; link[activechan+1]=0;
+          EraseChanBox(activechan);
+          ShowChanBox(activechan, activechan); 
+          ShowChanBox(activechan+1, activechan); 
+          ShowChanBalance(activechan,pan[activechan]);
+          ShowChanBalance(activechan+1,pan[activechan+1]);
+        }
+      }
+      else
+      {
+        lk=activechan; //remember what the active chan was, in case another arrow is pressed to link
+        ShowChanBox(activechan,0xFF); //erase select mode on the chan we are leaving
+        if (LastKey==3) {if (link[activechan]!=0) activechan+=2; else activechan++; if (activechan>15) activechan=0;}
+        if (LastKey==4) {activechan--; if (activechan>15) activechan=15; if (link[activechan]!=0) activechan--;}      
+        ShowChanBox(activechan, activechan); //show new chan selected
+        if (EncMode==0) EncValue=volume[activechan];
+        if (EncMode==1) EncValue=pan[activechan];
+        //Serial.print("Act:"); Serial.print(activechan); Serial.print(" Lk:"); Serial.println(link[activechan]);
+      }
 
      }
-     if (LastKey==2)
+     if (LastKey==2) 
      {
        if ((solo==0xFF)||((solo!=0xFF)&&(solo!=activechan))) //no solo currently, or solo on different channel
        {
           if (solo!=0xFF) {x=solo; solo=0xFF; ShowChanBox(x, 0xFF);} //erase solo mode on old chan
           solo=activechan;
+          if (mute[activechan]) mute[activechan]=0;
+          if (link[activechan]==1) mute[activechan+1]=0; //unmute solo channel if muted
           ShowChanBox(activechan,activechan);
+          ShowChanVolume(activechan,volume[activechan]);
+          ShowChanBalance(activechan,pan[activechan]);
        }
        else
        {
@@ -350,30 +390,54 @@ void loop() {
      } 
      if (LastKey==1)
      {
-        EncMode++; if (EncMode==2) EncMode=0;
-        if (EncMode==0) SetSoftkeyText(3,"Volume");
-        if (EncMode==1) SetSoftkeyText(3,"  Pan  ");
+        EncMode++; if (EncMode==3) EncMode=0;
+        if (EncMode==0) {SetSoftkeyText(3," Volume "); ShowChanBox(activechan,activechan); ShowMasterVolume(mainvol[0],0); EncValue=volume[activechan];}
+        if (EncMode==1) {SetSoftkeyText(3,"  Pan  "); EncValue=pan[activechan];}
+        if (EncMode==2) {SetSoftkeyText(3,"Master"); ShowChanBox(activechan,0xFF); ShowMasterVolume(mainvol[0],1); EncValue=mainvol[0];}
         ShowSoftKeys();
      }
+     if (LastKey==5) //encoder press (mute)
+     {
+        if (mute[activechan]==0) mute[activechan]=1; else mute[activechan]=0;
+        if (link[activechan]==1) {if (mute[activechan+1]==0) mute[activechan+1]=1; else mute[activechan+1]=0;} //also mute linked channel
+        if (solo==activechan) solo=0xFF; //cancel solo if mute
+        ShowChanBox(activechan,activechan);
+        ShowChanVolume(activechan,volume[activechan]);
+        ShowChanBalance(activechan,pan[activechan]);
+        UpdateFPGAAudioEngine(activechan+1);
+        if (link[activechan]==1) UpdateFPGAAudioEngine(activechan+2);
+     }
   }
+  if (KeyState==0x1F) lk=0; //forget last key if nothing pressed
 
   //process encoder change
   if (EncChange)
   {
     EncChange=0;
-    if (link[activechan]==0) //current chan is not linked
+    if (EncMode==2)
     {
-      if (EncMode==0) {volume[activechan]=EncValue; ShowChanVolume(activechan,volume[activechan]);}
-      if (EncMode==1) {pan[activechan]=EncValue; ShowChanBalance(activechan,pan[activechan]);}
+       mainvol[0]=EncValue;
+       mainvol[1]=EncValue;
+       ShowMasterVolume(mainvol[0],1);
+       UpdateFPGAAudioEngine(0);
+    }
+    else if (link[activechan]==0) //current chan is not linked or master mode
+    {
+      if (mute[activechan]) mute[activechan]=0;
+      if (EncMode==0) volume[activechan]=EncValue; 
+      if (EncMode==1) pan[activechan]=EncValue; 
+      ShowChanVolume(activechan,volume[activechan]);
+      ShowChanBalance(activechan,pan[activechan]);
       UpdateFPGAAudioEngine(activechan+1);
     }
     else //current chan is linked to the next one (the activechan will always be the first of a linked pair)
     {
+      if (mute[activechan]) {mute[activechan]=0; mute[activechan+1]=0;}
       if (EncMode==0) {
       volume[activechan]=EncValue;
       volume[activechan+1]=EncValue;
       ShowChanVolume(activechan,volume[activechan]);
-      ShowChanVolume(activechan+1,volume[activechan+1]);
+      ShowChanBalance(activechan,pan[activechan]);
       } //pan cannot be changed for paired channels
       UpdateFPGAAudioEngine(activechan+1);
       UpdateFPGAAudioEngine(activechan+2);

@@ -25,6 +25,7 @@ extern uint8_t level[16];
 extern uint8_t volume[16];
 extern uint8_t pan[16];
 extern uint8_t link[16];
+extern uint8_t mute[16];
 extern uint8_t UltranetGood;
 extern uint8_t solo;
 
@@ -60,6 +61,8 @@ void WaveDisplay(void);
 void ShowPointer(uint8_t val);
 void ErasePointer(void);
 void ShowChanBox(uint8_t chan, uint8_t active);
+void EraseChanBox(uint8_t chan);
+void ShowMasterVolume(uint8_t v, uint8_t sel);
 void ShowChanVolume(uint8_t ch, uint8_t v);
 void ShowChanBalance(uint8_t ch, uint8_t v);
 void ShowAudioLevel(uint8_t ch, uint8_t v);
