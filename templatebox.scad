@@ -82,7 +82,7 @@ difference () {
    };
 
 // Space for the construction of holes, breakouts, ... 
-    translate ([35,45,2]) cube ([31,4,12], center=true); //rj45s
+    translate ([19.9+31/2,45,2]) cube ([31,4,12], center=true); //rj45s
    translate ([-29,45,0]) rotate ([90,0,0]) cylinder (h=8, r=5.5/2, center = true, $fn = resol);
 
 };

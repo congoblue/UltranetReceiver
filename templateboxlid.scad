@@ -86,9 +86,9 @@ difference () {
 
 // Space for the construction of holes, breakouts, ... 
    translate ([0,0,0]) cube ( [50,39,8], center = true ); //disp
-   translate ([37,29,0]) rotate ([0,0,90]) cylinder (h=8, r=7/2, center = true, $fn = resol);
+   translate ([36,29.7,0]) rotate ([0,0,90]) cylinder (h=8, r=7/2, center = true, $fn = resol);
 
-   translate ([0,24+6,0]) cube ( [50,12,8], center = true ); //buttons
+   translate ([0,29.3,0]) cube ( [50,12,8], center = true ); //buttons
    
    //recess for screws
    translate ( [(width_x / 2) - cornerradius, (debth_y / 2) - cornerradius, -3.4 ] ) cylinder (h = nutlength, r = screwhead / 2, center = true, $fn = resol);
@@ -99,17 +99,18 @@ difference () {
 
 };
 
+
 //pcb pillars
 difference () {
     union () {
-        translate ([-50,37,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
-        translate ([-50,-37,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
-        translate ([53,37,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
-        translate ([53,-37,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
+        translate ([-49.5,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
+        translate ([-49.5,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
+        translate ([54.9,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
+        translate ([54.9,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
     };
-    translate ([-50,37,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
-    translate ([-50,-37,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
-    translate ([53,37,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
-    translate ([53,-37,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
+    translate ([-49.5,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
+    translate ([-49.5,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
+    translate ([54.9,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
+    translate ([54.9,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
     
 };
