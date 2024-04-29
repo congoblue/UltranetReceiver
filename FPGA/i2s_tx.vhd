@@ -86,9 +86,10 @@ begin
             LRCK_cnt <= 0;
             SCLK_cnt <= 0;   
             -- SDIN_cnt <= 0;      
-            wave_left <= (others => '0');
-            wave_right <= (others => '0');
-            shift_reg <= (others => '0');
+            -- wave_left <= (others => '0');
+            -- wave_right <= (others => '0');
+            -- shift_reg <= (others => '0');
+				shift_reg <= shift_reg(shift_reg'HIGH-1) & std_logic_vector(wave_left); --always start with the left chan
 
         elsif MCLK_in'event and MCLK_in = '1' then     -- Rising clock edge
             -- MCLK == 18.4320 Mhz
@@ -96,13 +97,13 @@ begin
             -- SCLK = 48 * Fs = MCLK/8
             if LRCK_cnt = LRCK_DIV then
                 LRCK_cnt <=0;
-                if LRCK_out = '1' then
+                if LRCK_out = '1' then 
                     --falling edge
                     --assert: SCLK will go low
                     LRCK_out <= '0';
                     -- load shift register for output
                     -- keep last not yet shifted bit of previous sample. 
-                    shift_reg <= shift_reg(shift_reg'HIGH-1) & std_logic_vector(wave_left); 
+                    shift_reg <= shift_reg(shift_reg'HIGH-1) & std_logic_vector(wave_left); --this won't get used normally as we reset after each R channel to keep the samples in sync with ultranet
                  else
                     -- rising edge
                     --assert: SCLK will go low

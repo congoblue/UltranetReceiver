@@ -3,7 +3,7 @@
 
        // Those settings have to be identical to the cover !!!
 width_x      = 130;          // Width of the housing (outer dimension) 
-debth_y      = 90;           // Debth of the housing (outer dimension)
+debth_y      = 85;           // Debth of the housing (outer dimension)
 wall         = 1.8;          // Wall thickness of the box
 cornerradius = 4.0;          // Radius of the corners
                              //   This value also defines the posts for stability and
@@ -82,6 +82,19 @@ difference () {
             };
          };
       }; 
+      
+      //spacer for rot encoder
+      translate ([36,29.7,0.4]) rotate ([0,0,90]) cylinder (h=2, r=12/2, center = true, $fn = resol);
+      
+      //side flanges
+      translate ([0,39.8,2]) cube ([width_x-20,1.7,4], center=true);
+      translate ([0,-39.8,2]) cube ([width_x-20,1.7,4], center=true);
+      translate ([62.4,0,2]) cube ([1.7,debth_y-16,4], center=true);
+      translate ([-62.4,0,2]) cube ([1.7,debth_y-16,4], center=true);
+      
+      //mount for switch cap assy
+      translate ([0,36.8,0]) cube ([44,1.3,1.3], center=true);
+      
    };
 
 // Space for the construction of holes, breakouts, ... 
@@ -103,14 +116,14 @@ difference () {
 //pcb pillars
 difference () {
     union () {
-        translate ([-49.5,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
-        translate ([-49.5,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
-        translate ([54.9,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
-        translate ([54.9,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=7/2, center = true, $fn = resol);
+        translate ([-49.5,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=9, r=6/2, center = true, $fn = resol);
+        translate ([-49.5,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=9, r=6/2, center = true, $fn = resol);
+        translate ([54.9,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=9, r=6/2, center = true, $fn = resol);
+        translate ([54.9,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=9, r=6/2, center = true, $fn = resol);
     };
-    translate ([-49.5,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
-    translate ([-49.5,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
-    translate ([54.9,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
-    translate ([54.9,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=10, r=nutdiameter/2, center = true, $fn = resol);
+    translate ([-49.5,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=9, r=nutdiameter/2, center = true, $fn = resol);
+    translate ([-49.5,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=9, r=nutdiameter/2, center = true, $fn = resol);
+    translate ([54.9,36.6,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=9, r=nutdiameter/2, center = true, $fn = resol);
+    translate ([54.9,-37.7,5-height_z/2+plate]) rotate ([0,0,90]) cylinder (h=9, r=nutdiameter/2, center = true, $fn = resol);
     
 };

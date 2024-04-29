@@ -16,6 +16,8 @@ entity ultranet_demux is
 		channel			: in unsigned(2 downto 0);
 		new_data			: in std_logic;
 		
+		sync				: out std_logic;
+		
 		ch1_out 			: out std_logic_vector(23 downto 0);
 		ch2_out 			: out std_logic_vector(23 downto 0);
 		ch3_out 			: out std_logic_vector(23 downto 0);
@@ -37,8 +39,14 @@ begin
 			znew_data <= new_data;
 			if new_data = '1' and znew_data = '0' then
 				pos_edge <= '1';
+				if (channel = 0) then 
+				   sync <= '0';
+				else
+				   sync <= '1';
+				end if;
 			else
 				pos_edge <= '0';
+				sync <= '1';
 			end if;
 		end if;
 	end process;
