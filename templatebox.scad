@@ -3,7 +3,7 @@
 
        // Those settings have to be identical to the cover !!!
 width_x      = 130;          // Width of the housing (outer dimension) 
-debth_y      = 90;           // Debth of the housing (outer dimension)
+debth_y      = 85;           // Debth of the housing (outer dimension)
 wall         = 1.8;          // Wall thickness of the box
 cornerradius = 4.0;          // Radius of the corners
                              //   This value also defines the posts for stability and
@@ -82,7 +82,11 @@ difference () {
    };
 
 // Space for the construction of holes, breakouts, ... 
-    translate ([19.9+31/2,45,2]) cube ([31,4,12], center=true); //rj45s
-   translate ([-29,45,0]) rotate ([90,0,0]) cylinder (h=8, r=5.5/2, center = true, $fn = resol);
+    translate ([19.9+31/2,40,1]) cube ([31,8,12], center=true); //rj45s
+   translate ([-29,45,3]) rotate ([90,0,0]) cylinder (h=8, r=6/2, center = true, $fn = resol); //jack
+
+    translate ([-65,-1.65,0]) cube ([8,12,7.5], center=true); //usb
+
 
 };
+
