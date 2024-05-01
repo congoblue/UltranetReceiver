@@ -5,7 +5,7 @@
 ## Overview
 This repository contains a FPGA-based receiver for audio-data based on Behringers Ultranet used in X32, P16-I, P16-M, Wing and more devices. Using a Arduino Vidor 4000 MKR FPGA-board with an Intel Cyclone 10LP, 16 Ultranet-Channels can be decoded.
 
-This is a fork of https://github.com/xn--nding-jua/UltranetReceiver
+This is a fork of https://github.com/xn--nding-jua/UltranetReceiver who I thank for making their work public for me to hack with.
 
 The FPGA allows volume-control and left/right-balancing of all 16 channels into a single L/R-Signal which is output using a UDA1334 codec board. A 320x240 SPI TFT screen with 4 buttons and a rotary encoder are added for user interface control.
 
