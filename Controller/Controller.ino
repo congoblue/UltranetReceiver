@@ -105,6 +105,7 @@ EEPROM-Mapping
 
 #include "Controller.h"
 #include "graphics.h"
+#include "ili9341.h"
 #include "SAMDTimerInterrupt.h"
 #include <FlashStorage_SAMD.h>
 
@@ -116,6 +117,7 @@ uint8_t activechan=0;
 uint8_t UltranetPrev=0;
 uint8_t PeakLevel[17];
 uint8_t EncMode=0;
+uint8_t OffsetChangeMode=0;
 
 void TimerSecondsFcn() {
   // toggle LED to show, that we are alive
@@ -144,8 +146,9 @@ void EepromRecall(void)
   uint8_t i;
   if (EEPROM.read(EEP_SIG)!=0xA5) //not setup - write defaults
   {
-      EEPROM.write(EEP_SIG,0xA5);
+      EEPROM.write(EEP_SIG,0xA5);      
       Serial.println("Eeprom set defaults");
+      EEPROM.write(EEP_CHANOFFSET,0);
       for (i=0; i<2; i++)
       {
         mainvol[i]=255;
@@ -163,6 +166,7 @@ void EepromRecall(void)
       EEPROM.commit();
   }
 
+  ChanOffset=EEPROM.read(EEP_CHANOFFSET);
   for (i=0; i<2; i++)
   {
     mainvol[i]=EEPROM.read(EEP_MAINL+i);
@@ -188,6 +192,7 @@ void EepromUpdate(void)
   uint8_t i, change=0;
 
   if ((millis()-lastupdate)<60000) return; //don't update if less than 60s
+  if (ChanOffset!=EEPROM.read(EEP_CHANOFFSET)) {change=1; EEPROM.write(EEP_CHANOFFSET,ChanOffset);}
   for (i=0; i<2; i++)
   {
     if (mainvol[i]!=EEPROM.read(EEP_MAINL+i)) {change=1; EEPROM.write(EEP_MAINL+i,mainvol[i]);}
@@ -281,7 +286,7 @@ void loop() {
   uint32_t audioupdatetime=0;
   uint32_t eepromupdatetime=millis()+15000;
   uint8_t x,v;
-  char buf[8];
+  char buf[32];
   static uint8_t lk=0;
   #if UseEthernet == 1
     // handle ethernet clients
@@ -408,39 +413,75 @@ void loop() {
         if (link[activechan]==1) UpdateFPGAAudioEngine(activechan+2);
      }
   }
-  if (KeyState==0x1F) lk=0; //forget last key if nothing pressed
+  if (KeyState==0x1F)  //nothing is pressed
+  {
+    lk=0; //forget last key if nothing pressed
+    if (OffsetChangeMode!=0) //if was changing offset, erase the message and go back to normal
+    {
+        OffsetChangeMode=0;
+        fillRect(100,0,80,20,0);
+        EncMode=0;
+        SetSoftkeyText(3," Volume "); ShowChanBox(activechan,activechan); ShowMasterVolume(mainvol[0],0); EncValue=volume[activechan];
+        for (x=1; x<17; x++) UpdateFPGAAudioEngine(x);
+    }
+
+  }
 
   //process encoder change
   if (EncChange)
   {
     EncChange=0;
-    if (EncMode==2)
+    if ((KeyState&1)==0) //if rh key held, change the channel offset
     {
-       mainvol[0]=EncValue;
-       mainvol[1]=EncValue;
-       ShowMasterVolume(mainvol[0],1);
-       UpdateFPGAAudioEngine(0);
+       if (OffsetChangeMode==0)
+       {
+          OffsetChangeMode=1;
+          EncValue=ChanOffset*8;
+          sprintf(buf,"Offset:%u",ChanOffset);
+          setWindow(0,0,_width,_height);
+          setxy(101,5);
+          putstr(buf);
+       }
+       else
+       {
+          ChanOffset=EncValue/8;
+          if (ChanOffset>7) {ChanOffset=7; EncValue=7*8;}
+          sprintf(buf,"Offset:%u",ChanOffset);
+          setWindow(0,0,_width,_height);
+          setxy(101,5);
+          putstr(buf);
+       }
     }
-    else if (link[activechan]==0) //current chan is not linked or master mode
+    else //no keys held, do volume/pan
     {
-      if (mute[activechan]) mute[activechan]=0;
-      if (EncMode==0) volume[activechan]=EncValue; 
-      if (EncMode==1) pan[activechan]=EncValue; 
-      ShowChanVolume(activechan,volume[activechan]);
-      ShowChanBalance(activechan,pan[activechan]);
-      UpdateFPGAAudioEngine(activechan+1);
-    }
-    else //current chan is linked to the next one (the activechan will always be the first of a linked pair)
-    {
-      if (mute[activechan]) {mute[activechan]=0; mute[activechan+1]=0;}
-      if (EncMode==0) {
-      volume[activechan]=EncValue;
-      volume[activechan+1]=EncValue;
-      ShowChanVolume(activechan,volume[activechan]);
-      ShowChanBalance(activechan,pan[activechan]);
-      } //pan cannot be changed for paired channels
-      UpdateFPGAAudioEngine(activechan+1);
-      UpdateFPGAAudioEngine(activechan+2);
+      if (EncMode==2) //master volume
+      {
+        mainvol[0]=EncValue;
+        mainvol[1]=EncValue;
+        ShowMasterVolume(mainvol[0],1);
+        UpdateFPGAAudioEngine(0);
+      }
+      else if (link[activechan]==0) //current chan is not linked or master mode
+      {
+        if (mute[activechan]) mute[activechan]=0; //always unmute if vol changed
+        if (EncMode==0) volume[activechan]=EncValue; 
+        if (EncMode==1) pan[activechan]=EncValue; 
+        ShowChanVolume(activechan,volume[activechan]); 
+        ShowChanBalance(activechan,pan[activechan]);
+        UpdateFPGAAudioEngine(activechan+1);
+      }
+      else //current chan is linked to the next one (the activechan will always be the first of a linked pair)
+      {
+        if (mute[activechan]) {mute[activechan]=0; mute[activechan+1]=0;}
+        if (EncMode==0) {
+          volume[activechan]=EncValue;
+          volume[activechan+1]=EncValue;
+          ShowChanVolume(activechan,volume[activechan]);
+          ShowChanBalance(activechan,pan[activechan]);
+        } //pan cannot be changed for paired channels
+        UpdateFPGAAudioEngine(activechan+1);
+        UpdateFPGAAudioEngine(activechan+2);
+      }
     }
   }
 

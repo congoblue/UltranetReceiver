@@ -36,6 +36,7 @@ const char compile_date[] = __DATE__ " " __TIME__;
 
 //eeprom locations
 #define EEP_SIG 1
+#define EEP_CHANOFFSET 2
 #define EEP_MAINL 8
 #define EEP_MAINR 9
 #define EEP_VOL 16

@@ -84,6 +84,7 @@ uint8_t link[16];
 uint8_t mute[16];
 uint8_t solo=0xFF;
 uint8_t UltranetGood=0;
+uint8_t ChanOffset=0;
 
 //font structure
 typedef struct
@@ -1077,10 +1078,22 @@ void ShowChanBalance(uint8_t ch, uint8_t v)
   if (link[ch]==1) ShowChanBalance(ch+1,pan[ch+1]);
 }
 
-void ShowAudioLevel(uint8_t ch, uint8_t v)
+void ShowAudioLevel(uint8_t chan, uint8_t v)
 {
+  uint8_t ch;
   uint8_t vv,vr,vy,vg, x=0; 
   uint16_t vp=CBOXT;
+
+  //use the offset to display the correct channel.
+  if (chan>=8)
+  {
+     ch=8+(((chan-8)+ChanOffset)&0x07);
+  }
+  else
+  {
+     ch=(chan+ChanOffset)&0x07;
+  }
+
   if (ch>=8) {x=8; vp+=CBOXH+4;}
   vv=v*(CBOXH-20)/256; //the total level
   if (v>192) vr=(v-192)*(CBOXH-20)/256; else vr=0;

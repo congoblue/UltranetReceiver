@@ -27,6 +27,7 @@ extern uint8_t pan[16];
 extern uint8_t link[16];
 extern uint8_t mute[16];
 extern uint8_t UltranetGood;
+extern uint8_t ChanOffset;
 extern uint8_t solo;
 
 extern volatile uint8_t EncValue;
